@@ -2,7 +2,7 @@ namespace Hash{
     // 1 based, double hash
 	typedef long long ll;
 	const ll P1 = 29;
-	const ll P2 = 1;
+	const ll P2 = 131;
 	const ll MOD1 = 1e9 + 7;
 	const ll MOD2 = 1e9 + 9;
 	ll p1[N], p2[N], h1[N], h2[N];
