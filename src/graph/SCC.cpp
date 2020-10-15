@@ -28,7 +28,7 @@ struct Graph {
 
     /**************************************************/
     int scc_clock, scc_cnt;
-    vector<int> dfn, low, belong, scc_size, ma;
+    vector<int> dfn, low, belong, scc_size;
     vector<bool> ins;
     stack<int> stk;
 
@@ -58,7 +58,6 @@ struct Graph {
                 top = stk.top(); stk.pop();
                 ins[top] = false;
                 belong[top] = scc_cnt;
-                ma[scc_cnt] = max(ma[scc_cnt], top);
                 ++scc_size[scc_cnt];
             } while(u != top);
         }
@@ -69,7 +68,6 @@ struct Graph {
         dfn = vector<int>(V + 1);
         low = vector<int>(V + 1);
         belong = vector<int>(V + 1);
-        ma = vector<int>(V + 1);
         ins = vector<bool>(V + 1);
         scc_size = vector<int>(1);
 
