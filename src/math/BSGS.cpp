@@ -22,6 +22,7 @@ namespace BSGS {
         return ans;
     }
 
+    // solve a^x = b (mod p), p is a prime must hold
     ll BSGS(ll a, ll b, ll p) {
         unordered_map<ll, int> mp;
         if(__gcd(a, p) != 1) return -1;
@@ -37,19 +38,20 @@ namespace BSGS {
         return -1;
     }
 
-    ll EXBSGS(ll a, ll b, ll mod) {
+    // solve a^x = b (mod p), p don't need to be a prime
+    ll EXBSGS(ll a, ll b, ll p) {
         ll k = 0, d, c = 1, x, y;
-        a %= mod; b %= mod;
+        a %= p; b %= p;
         if(a == b) return 1;
         if(b == 1) return 0;
-        while((d=__gcd(a,mod)) != 1) {
+        while((d=__gcd(a,p)) != 1) {
             if(b % d) return -1;
-            k++; b /= d; mod /= d; c = c * (a / d) % mod;
+            k++; b /= d; p /= d; c = c * (a / d) % p;
             if(c == b) return k;
         }
-        if(mod == 1) return k;
-        exgcd(c, mod, x, y); b = (b * x % mod + mod) % mod; a %= mod;
-        ll ans = BSGS(a, b, mod);
+        if(p == 1) return k;
+        exgcd(c, p, x, y); b = (b * x % p + p) % p; a %= p;
+        ll ans = BSGS(a, b, p);
         return ans == -1 ? ans : ans + k;
     }
 }
