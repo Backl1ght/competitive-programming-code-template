@@ -9,12 +9,18 @@ public class Main {
         InputReader in = new InputReader(inputStream);
         PrintWriter out = new PrintWriter(outputStream);
         Task solver = new Task();
-        solver.solve(1, in, out);
+
+        int T = 1;
+        // T = in.nextInt();
+        for (int i = 1; i <= T; ++i)
+            solver.solve(i, in, out);
+
         out.close();
     }
  
     static class Task {
         public void solve(int testNumber, InputReader in, PrintWriter out) {
+            // write your solution here
             out.println("Hello World");
         }
     }
