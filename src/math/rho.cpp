@@ -153,7 +153,9 @@ namespace Pollard_Rho {
         cnt = 0;
         _factor(n);
         norm();
-        return getd();
+        vector<ll> d = getd();
+        sort(d.begin(), d.end());
+        return d;
     }
 
     // get prime factors
