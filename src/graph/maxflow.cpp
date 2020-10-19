@@ -2,6 +2,7 @@ namespace Backlight {
 
     template<typename T>
     struct mf_graph {
+        static const Cap INF = numeric_limits<Cap>::max();
 
         struct Edge {
             int v, nxt;
@@ -77,7 +78,7 @@ namespace Backlight {
             T res = 0;
             while(bfs()) {
                 f = h;
-                res += dfs(dfs, s, numeric_limits<T>::max());
+                res += dfs(dfs, s, INF);
             }
             return res;
         }
