@@ -1,3 +1,5 @@
+namespace Backlight {
+
 namespace NTT {
     // 998244353, 1004535809
     const int P = 998244353, G = 3, Gi = 332748118;
