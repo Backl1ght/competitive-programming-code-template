@@ -1,7 +1,5 @@
 namespace Backlight {
 
-#define WRAPH
-#define WG_LCA
 template<typename T>
 struct Wraph {
     struct Edge {

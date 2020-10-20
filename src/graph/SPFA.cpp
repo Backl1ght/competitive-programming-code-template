@@ -1,6 +1,5 @@
 namespace Backlight {
 
-#define SPFA
 template<typename T>
 struct Wraph {
     struct Edge {

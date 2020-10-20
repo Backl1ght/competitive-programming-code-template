@@ -1,6 +1,5 @@
 namespace Backlight {
 
-#define DIJKSTRA
 template<typename T>
 struct Wraph {
     struct Edge {

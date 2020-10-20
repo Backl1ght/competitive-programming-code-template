@@ -1,6 +1,5 @@
 namespace Backlight {
 
-#define WRAPH
 template<typename T>
 struct Wraph {
     struct Edge {

@@ -1,7 +1,6 @@
 namespace Backlight {
 
 // get x, y for ax + by = GCD(a, b)
-#define EXGCD
 ll exgcd(ll a, ll b, ll& x, ll& y) {
     if (b == 0) {
         x = 1; y = 0; 
@@ -17,7 +16,6 @@ ll exgcd(ll a, ll b, ll& x, ll& y) {
 // CRT: solve x = a_i (mod m_i) for i in [0, n)
 
 // GCD(m_i, m_j) = 1 hold
-#define CRT1
 ll CRT(vector<ll>& a, vector<ll>& m) {
     assert(a.size() == m.size());
     assert(a.size() > 0);
@@ -45,7 +43,6 @@ ll mul(ll a, ll b, ll mod) {
 }
 
 // GCD(m_i, m_j) = 1 not hold
-#define CRT2
 ll EXCRT(vector<ll>& a, vector<ll>& m) {
     assert(a.size() == m.size());
     assert(a.size() > 0);

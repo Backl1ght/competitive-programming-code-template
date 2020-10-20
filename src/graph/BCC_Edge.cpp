@@ -1,7 +1,5 @@
 namespace Backlight {
 
-#define BCC_EDGE
-#define GRAPH
 struct Graph {
     #define fore(i, u) for (int i = h[u]; i; i = e[i].nxt)
     struct Edge {

@@ -1,6 +1,5 @@
 namespace Backlight {
 
-#define GRAPH
 struct Graph {
     struct Edge {
         int u, v;

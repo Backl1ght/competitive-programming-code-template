@@ -1,6 +1,5 @@
 namespace Backlight {
 
-#define KRUSKAL
 template<typename T>
 struct Wraph {
     struct Edge {
