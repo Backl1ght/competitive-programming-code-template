@@ -1,14 +1,14 @@
 namespace Backlight {
 
-    template<typename T>
+    template<typename Cap>
     struct mf_graph {
         static const Cap INF = numeric_limits<Cap>::max();
 
         struct Edge {
             int v, nxt;
-            T c, f;
+            Cap c, f;
             Edge(){}
-            Edge(int _v, int _nxt, T _c): v(_v), nxt(_nxt), c(_c), f(0) {}
+            Edge(int _v, int _nxt, Cap _c): v(_v), nxt(_nxt), c(_c), f(0) {}
         };
 
         int V, E;
@@ -18,7 +18,7 @@ namespace Backlight {
         mf_graph() : V(0) {}
         mf_graph(int _V) : V(_V), h(_V + 1, -1) { }
 
-        inline void addarc(int u, int v, T c) {
+        inline void addarc(int u, int v, Cap c) {
             assert(1 <= u && u <= V);
             assert(1 <= v && v <= V);
             assert(0 <= c);
@@ -26,12 +26,12 @@ namespace Backlight {
             e.push_back(Edge(v, h[u], c)); h[u] = e.size() - 1;
         }
 
-        inline void addedge(int u, int v, T c) {
+        inline void addedge(int u, int v, Cap c) {
             addarc(u, v, c);
             addarc(v, u, 0);
         }
 
-        T maxflow(int s, int t) {
+        Cap maxflow(int s, int t) {
             assert(1 <= s && s <= V);
             assert(1 <= t && t <= V);
             assert(s != t);
@@ -56,13 +56,13 @@ namespace Backlight {
                 return (d[t] != -1);
             };
 
-            auto dfs = [&] (auto self, int u, T up) {
+            auto dfs = [&] (auto self, int u, Cap up) {
                 if(u == t || up == 0) return up;
-                T res = 0;
+                Cap res = 0;
                 for(int& i = f[u]; i != -1; i = e[i].nxt) {
                     int v = e[i].v;
                     if(d[u] + 1 == d[v]) {
-                        T nf = self(self, v, min(up, e[i].c - e[i].f));
+                        Cap nf = self(self, v, min(up, e[i].c - e[i].f));
                         if (nf <= 0) continue;
                         up -= nf;
                         res += nf;
@@ -75,7 +75,7 @@ namespace Backlight {
                 return res;
             };
             
-            T res = 0;
+            Cap res = 0;
             while(bfs()) {
                 f = h;
                 res += dfs(dfs, s, INF);
