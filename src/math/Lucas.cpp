@@ -1,3 +1,5 @@
+namespace Backlight {
+
 // use this when n, m is really large and p is small
 namespace Lucas {
     inline ll pow(ll a, ll b, ll p) {
