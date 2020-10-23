@@ -1,34 +1,41 @@
-#include<bits/stdc++.h>
-using namespace std;
-const int maxn = 11000009;
-char s[maxn];
+namespace Manacher {
+    // 1-based
 
-int len[maxn<<1],N;
-char ch[maxn<<1];
-void init(char *s){
-	int n = strlen(s+1);//s:range[1,n]
-	ch[n*2 +1] = '#';
-	ch[0] = '@';
-	ch[n*2 +2] = '\0';
-	for (int i=n;i>=1;i--)ch[i*2] = s[i], ch[i*2 -1] = '#';
-	N = 2* n +1;
-}
-void manacher(){
-	int ma=0, k=1;
-	len[1]=1;
-	for (int i=2;i<=N;i++){
-		int p = k+len[k]-1;
-		if (i<=p)len[i]=min(len[2*k-i],p-i+1);
-		else len[i]=1;  
-		while (ch[i+len[i]]==ch[i-len[i]])len[i]++;
-		if (i+len[i]>k+len[k])k=i;
-		ma=max(ma,len[i]);
-	}
-	printf("%d\n",ma-1);
-}
-int main(){
-	scanf("%s",s+1);
-	init(s);
-	manacher();
-	return 0;
+    const int __N = N << 1;
+
+    char s[__N];
+    int n, len[__N];
+
+    // @ t1 t2 t3
+    // @ # t1 # t2 # t3 # \0
+    inline void init(char* t, int m) {
+        n = 2 * m + 1;
+        s[0] = '@'; s[n] = '#'; s[n + 1] = 0;
+        for (int i = 1; i <= m; ++i) {
+            s[2 * i - 1] = '#';
+            s[2 * i] = t[i];
+        }
+    }
+
+    // s[i-len[i]...i+len[i]] is palindromic
+    // len[i]-1 is palindromic radius in t
+    void manacher(char* t, int m) {
+        init(t, m);
+        for (int i = 1, l = 0, r = 0, k; i <= n; ++i) {
+            k = i > r ? 1 : min(r - i, len[l + r - i]);
+            while(i - k > 0 && i + k <= n && s[i - k] == s[i + k]) ++k;
+            len[i] = k--;
+            if (i + k > r) {
+                l = i -  k;
+                r = i + k;
+            }
+        }
+    }
+
+    int getMaxPalindromicLength(char* t, int m) {
+        manacher(t, m);
+        int ma = 0;
+        for (int i = 1; i <= n; ++i) updMax(ma, len[i]);
+        return ma - 1;
+    }
 }
