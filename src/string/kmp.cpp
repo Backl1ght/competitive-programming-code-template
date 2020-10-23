@@ -1,51 +1,35 @@
-#include <bits/stdc++.h>
-using namespace std;
-
-const int N = 1e4 + 5;
-const int M = 1e6 + 5;
-int s[N], t[M];
-int n, m, nxt[N], fail[N];
-void get_fail() {
-    int k = 0;
-    for (int i = 1; i <= n; i++) {
-        nxt[i] = k;
-        fail[i] = (s[i] == s[k]) ? fail[k] : k;
-        while(k && s[i] != s[k]) k = fail[k];
-        if (s[i] == s[k]) k++;
-    }
-}
-
-int match() {
-    int pos = -1;
-    int j =0;
-    for (int i = 0; i < m; i++) {
-        while(j && t[i] != s[j]) j = fail[j];
-        if (t[i] == s[j]) {
-            j++;
-            if (j == n) {
-                pos = i + 2 - n;
-                break;
-            }
+namespace KMP {
+    void getPi(char* s, int n, int* pi) {
+        pi[0] = 0;
+        for (int i = 1; i < n; ++i) {
+            int j = pi[i - 1];
+            while(j > 0 && s[j] != s[i]) j = pi[j - 1];
+            if (s[i] == s[j]) ++j;
+            pi[i] = j;
         }
     }
-    return pos;
-}
 
-int repete() {
-    int len = m - nxt[m];
-    return m % len ? m : len;
-}
+    vector<int> getAllMatchPosition(char* s, int n, int* pi, char* t, int m) {
+        s[n] = '#'; s[n + 1] = 0; ++n;
+        KMP::getPi(s, n, pi);
 
-void solve(int Case) {
-    scanf("%d %d", &m, &n);
-    for(int i = 0; i < m; i++) scanf("%d", &t[i]);
-    for(int i = 0; i < n; i++) scanf("%d", &s[i]);
-    get_fail();
-    printf("%d\n", match());
-}
+        vector<int> ans;
 
-int main()
-{
-    int T; scanf("%d", &T); for(int i=1;i<=T;i++) solve(i);
-    return 0;
+        int p = 0;
+        for (int i = 0; i < m; ++i) {
+            while(p > 0 && t[i] != s[p]) p = pi[p - 1];
+            if (t[i] == s[p]) {
+                ++p;
+                if (p == n - 1) {
+                    ans.push_back(i + 2 - n);
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    int getPeriod(int n, int* pi) {
+        return n - pi[n - 1];
+    }
 }
