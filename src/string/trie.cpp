@@ -1,34 +1,44 @@
-namespace Trie{
-    // 1 based
-    int sz;
-    int ch[N][26];
-    int val[N];// 记录某些特性，如以当前字符串为结尾的串的个数
-    void init()	{
-        sz=1;
+namespace Trie {
+    // 1-based
+    const int __N = 4e6 + 5;
+    const int __M = 26;
+    int tot;
+    int ch[__N][__M];
+    int f[__N], e[__N];
+
+    inline void init() {
+        tot = 0;
         memset(ch[0], 0, sizeof(ch[0]));
-        memset(val, 0, sizeof(val));
+        f[0] = e[0] = 0;
     }
-    inline int idx(char c){return c-'a';}
-    void add(char* s) {
-        int u=0, len=strlen(s+1);
-        for(int i=1; i<=len; i++){
-            int c = idx(s[i]);
-            if(!ch[u][c]) {
-                memset(ch[sz], 0, sizeof(ch[sz]));
-                val[sz] = 0;
-                ch[u][c] = sz++;
-            }
-            u = ch[u][c];
-            val[u]++;
+ 
+    inline int newnode() {
+        ++tot;
+        memset(ch[tot], 0, sizeof(ch[tot]));
+        f[tot] = e[tot] = 0;
+        return tot;
+    }
+ 
+    inline int idx(char c) { return c - 'a'; }
+ 
+    void insert(char* s) {
+        int n = strlen(s + 1), p = 0, c;
+        for (int i = 1; i <= n; ++i) {
+            c = idx(s[i]);
+            if (!ch[p][c]) ch[p][c] = newnode();
+            p = ch[p][c];
+            ++f[p];
         }
+        ++e[p];
     }
+ 
     int query(char* s) {
-        int u=0, len=strlen(s+1);
-        for(int i=1; i<=len; i++){
-            int c = idx(s[i]);
-            if(!ch[u][c]) return 0;
-            u = ch[u][c];
+        int p = 0, n = strlen(s + 1), c;
+        for(int i = 1; i <= n; i++){
+            c = idx(s[i]);
+            if(!ch[p][c]) return 0;
+            p = ch[p][c];
         }
-        return val[u];
+        return e[p];
     }
 }
