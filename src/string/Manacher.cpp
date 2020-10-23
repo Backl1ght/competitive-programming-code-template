@@ -23,7 +23,7 @@ namespace Manacher {
         init(t, m);
         for (int i = 1, l = 0, r = 0, k; i <= n; ++i) {
             k = i > r ? 1 : min(r - i, len[l + r - i]);
-            while(i - k > 0 && i + k <= n && s[i - k] == s[i + k]) ++k;
+            while(s[i - k] == s[i + k]) ++k;
             len[i] = k--;
             if (i + k > r) {
                 l = i -  k;
