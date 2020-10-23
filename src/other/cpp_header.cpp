@@ -1,27 +1,13 @@
 #include <bits/stdc++.h>
 using namespace std;
  
-// #include <ext/rope>
-// using namespace __gnu_cxx;c
- 
-// #include <ext/pb_ds/assoc_container.hpp>
-// #include <ext/pb_ds/tree_policy.hpp>
-// using namespace __gnu_pbds;
- 
-// typedef ll key_type;
-// typedef null_mapped_type value_type;
-// typedef tree<key_type, value_type, less<key_type>, rb_tree_tag, tree_order_statistics_node_update> rbtree;
- 
-// typedef __gnu_pbds::priority_queue<pi,greater<pi>,pairing_heap_tag > heap;
- 
-// mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
-// int rnd(int l,int r){return l+rng()%(r-l+1);}
- 
 typedef long long ll;
 typedef unsigned long long ull;
 typedef pair<int,int> PII;
 typedef vector<int> VI;
+typedef vector<ll> VL;
 typedef vector<vector<int>> VVI;
+typedef vector<vector<ll>> VVL;
  
 #define REP(i, _, __) for (int i = (_); i < (__); ++i)
 #define PER(i, _, __) for (int i = (_-1); i >= (__); --i)
@@ -41,6 +27,11 @@ typedef vector<vector<int>> VVI;
 const double PI = acos(-1.0);
    
 namespace Backlight {
+    const int __BUFFER_SIZE__ = 1 << 20;
+    bool NEOF = 1; //为0表示文件结尾
+    int __top;
+    char __buf[__BUFFER_SIZE__], *__p1 = __buf, *__p2 = __buf, __stk[996];
+
     inline bool isdowncase(char c) { return (c >= 'a') && (c <= 'z'); }
     inline bool isupcase(char c) { return (c >= 'A') && (c <= 'Z'); }
     inline bool isdigit(char c) { return (c >= '0') && (c <= '9'); }
@@ -63,11 +54,8 @@ namespace Backlight {
     template<typename T>
     void updMax(T& a, T b) { if (a < b) a = b; }
 
-    bool NEOF = 1; //为0表示文件结尾
-    const int BUFFER_SIZE = 1 << 20;
     inline char nc() {
-        static char buf[BUFFER_SIZE], *p1 = buf, *p2 = buf;
-        return p1 == p2 && NEOF && (p2 = (p1 = buf) + fread(buf, 1, BUFFER_SIZE, stdin), p1 == p2) ? (NEOF = 0, EOF) : *p1++;
+        return __p1 == __p2 && NEOF && (__p2 = (__p1 = __buf) + fread(__buf, 1, __BUFFER_SIZE__, stdin), __p1 == __p2) ? (NEOF = 0, EOF) : *__p1++;
     }
    
     template<typename T>
@@ -98,7 +86,7 @@ namespace Backlight {
         return read(rest...);
     }
 
-    // inline bool need(char c) { return (c == '.') || (c == 'x') || (c=='o');}
+    // inline bool need(char c) { return (c == '-') || (c == '>') || (c == '<');}
     // inline bool need(char c) { return isdowncase(c) || isupcase(c) || isdigit(c) || c == '.' || c == '#'; }
     inline bool need(char c) { return isdowncase(c) || isupcase(c) || isdigit(c); }
 
@@ -108,12 +96,39 @@ namespace Backlight {
     }
 
     template<typename T>
-    inline void println(T x, bool flag = true) {
+    inline void print(T x) {
         if (x < 0) putchar('-'), x = -x;
-        if (x > 9) println(x / 10, false);
-        putchar('0' + x % 10);
-        if (flag) putchar('\n');
+        if (x == 0) { putchar('0'); return; }
+        __top = 0;
+        while(x) {
+            __stk[++__top] = x % 10 + '0';
+            x /= 10;
+        }
+        while(__top) {
+            putchar(__stk[__top]);
+            --__top;
+        }
     }
+
+    template<typename First, typename... Rest>
+    inline void print(First f, Rest... r) {
+        print(f); putchar(' ');
+        print(r...);
+    }
+
+    template<typename T>
+    inline void println(T x) {
+        print(x); 
+        putchar('\n');
+    }
+
+    template<typename First, typename... Rest>
+    inline void println(First f, Rest... r) {
+        print(f); putchar(' ');
+        println(r...);
+    }
+
+
    
     template<typename T>
     inline void _dbg(const char *format, T value) { cerr << format << '=' << value << endl; }
@@ -166,27 +181,38 @@ namespace Backlight {
  * 能不能把我掉的分还给我
  ************     Backlight     **********/
 
+// mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+// int rnd(int l, int r) { return l + rng() % (r - l + 1); }
+
 using namespace Backlight;
-const int N = 5e5 + 5;
+const int N = 2e7 + 5;
 const int M = 5e5 + 5;
 const int V = 5e7 + 5;
-const ll MOD = 998244353;              // 998244353 1e9+7
+const ll MOD = 1e9+ 7 ;              // 998244353 1e9+7
 const int INF = 0x3f3f3f3f;             // 1e9+7 0x3f3f3f3f
 const ll LLINF = 0x3f3f3f3f3f3f3f3f;    // 1e18+9 0x3f3f3f3f3f3f3f3f
 const double eps = 1e-8;
 
-
 void solve(int Case) { // printf("Case #%d: ", Case);
-    
+
 }
 
 int main() {
 #ifdef BACKLIGHT
     freopen("in.txt", "r", stdin);
+    auto begin = std::chrono::steady_clock::now();
 #endif
+
     // ios::sync_with_stdio(false); cin.tie(0); cout.tie(0);
     int T = 1;
     // read(T);
     for (int _ = 1; _ <= T; _++) solve(_);
+
+#ifdef BACKLIGHT
+    freopen("in.txt", "r", stdin);
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+    cerr << "\033[32mTime Elasped: " << (double) (duration.count()) << " ms\033[0m" << endl;
+#endif
     return 0;
 }
