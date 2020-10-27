@@ -17,6 +17,7 @@ namespace PersistentSegmentTree {
         return nrt;
     }
 
+    // 区间第k小
     int query(int u, int v, int l, int r, int k) {
         if (l == r) return l;
         int lsum = s[L[v]] - s[L[u]], mid = (l + r) >> 1;;

@@ -98,6 +98,7 @@ namespace LinkCutTree {
         splay(y);
     }
 
+    // x--y路径上节点点权和
     inline int query(int x, int y) {
         split(x, y);
         return sum[y];
