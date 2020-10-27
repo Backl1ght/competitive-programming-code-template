@@ -6,8 +6,8 @@ namespace Manacher {
     char s[__N];
     int n, len[__N];
 
-    // @ t1 t2 t3
-    // @ # t1 # t2 # t3 # \0
+    // @ t1 t2 t3 \0
+    // ==> @ # t1 # t2 # t3 # \0
     inline void init(char* t, int m) {
         n = 2 * m + 1;
         s[0] = '@'; s[n] = '#'; s[n + 1] = 0;

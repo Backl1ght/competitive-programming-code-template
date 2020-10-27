@@ -1,4 +1,5 @@
 namespace KMP {
+    // pi_i = s[0...i]最长border
     void getPi(char* s, int n, int* pi) {
         pi[0] = 0;
         for (int i = 1; i < n; ++i) {

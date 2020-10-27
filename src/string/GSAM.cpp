@@ -82,6 +82,7 @@ namespace GSAM {
         }
     }
 
+    // 多模式串--本质不同子串数
     ll count() {
         ll res = 0;
         for (int i = 1; i <= tot; ++i) 
