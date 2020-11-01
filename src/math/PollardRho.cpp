@@ -147,6 +147,8 @@ namespace Pollard_Rho {
 
     /**************************************************/
 
+    // Attention: call init() before use
+
     // get all factors
     vector<ll> factorA(ll n) {
         cnt = 0;
