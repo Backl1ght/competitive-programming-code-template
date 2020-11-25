@@ -28,7 +28,7 @@ namespace SegmentTree {
             v[x] = a[l];
             return;
         }
-        build(lson); build(rson);
+        build(lson, a); build(rson, a);
         push_up(x);
     }
 
