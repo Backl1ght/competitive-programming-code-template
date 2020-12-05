@@ -52,20 +52,20 @@ struct Treap {
     }
 
     void split_size(node* p, int k, node*& a, node*&b){
-		if(!p) a = b = NULL;
-		else{
-			if(get_size(p->l) <= k){
-				a = p;
-				split_size(p->r, k - get_size(p->l), a->r, b);
-				push_up(a);
-			}
-			else{
-				b = p;
-				split_size(p->l, k, a, b->l);
-				push_up(b);
-			}
-		}
-	}
+        if(!p) a = b = NULL;
+        else{
+            if(get_size(p->l) <= k){
+                a = p;
+                split_size(p->r, k - get_size(p->l) - 1, a->r, b);
+                push_up(a);
+            }
+            else{
+                b = p;
+                split_size(p->l, k, a, b->l);
+                push_up(b);
+            }
+        }
+    }
 
     void ins(int val) {
         node *a, *b;
