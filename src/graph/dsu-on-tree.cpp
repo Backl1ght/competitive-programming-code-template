@@ -21,6 +21,7 @@ void dfs1(int u, int fa) {
 }
 
 void add(int u, int fa, int Son, int d) {
+    // update data here
     cnt[color[u]] += d;
     if (cnt[color[u]] > ma) ma = cnt[color[u]], cur = 0;
     if (cnt[color[u]] == ma) cur += color[u];
