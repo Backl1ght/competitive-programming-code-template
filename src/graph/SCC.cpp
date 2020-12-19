@@ -39,7 +39,7 @@ struct Graph {
         for (Edge& e: G[u]) {
             int v = e.v;
             // if (v == fa && !flag) {
-            //     k = true;
+            //     flag = true;
             //     continue;
             // }
 
