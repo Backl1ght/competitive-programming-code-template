@@ -1,4 +1,3 @@
-// 只测了部分内容
 namespace Geometry
 {
     // 定义以及防止精度出错
@@ -136,8 +135,8 @@ namespace Geometry
         return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
     }
 
-    // LightOJ1203: 最终答案会在凸包上，然后算ab与ac的夹角，单位为弧度
-    // ab与ac的夹角
+    // LightOJ1203
+    // 最终答案会在凸包上，然后算ab与ac的夹角，单位为弧度
     double radian(point a, point b, point c) {
         return fabs(atan2(fabs(det(a, b, c)), dot(a, b, c)));
     }
@@ -151,8 +150,8 @@ namespace Geometry
     struct line
     {
         point s, e;         // 直线端点
-        double a, b, c;     // ax + by + c = 0
-        double k;           // 斜率, 单位为弧度，[-pi, pi]
+        double a, b, c;     // ax+by+c=0
+        double k;           // 斜率,[-pi, pi]
 
         line(point _s = point(), point _e = point()) : s(_s), e(_e) {
             k = atan2(e.y - s.y, e.x - s.x);
@@ -378,11 +377,11 @@ namespace Geometry
         }
 
         // 圆和圆的关系
-        // 5 相离 
-        // 4 外切 
-        // 3 相交 
-        // 2 内切 
-        // 1 内含
+        //5 相离 
+        //4 外切 
+        //3 相交 
+        //2 内切 
+        //1 内含
         int relationToCircle(circle c) {
             double d = distance(p, c.p);
             if(sgn(d - r - c.r) > 0) return 5;
@@ -533,17 +532,65 @@ namespace Geometry
             return distance(pr.first, pr.second);
         }
 
-        // 平面最近点对
-        void getMinpair(int l, int r) {
+        // 平面最近点对(P1257, P1429)
+        // 分治法求解平面最近点对，复杂度$ O(n \log n) $
+        void __getMinPair(int l, int r, point& p1, point& p2, double& dis) {
+            if (r - l <= 9) {
+                for (int i = l; i <= r; ++i) {
+                    for (int j = i + 1; j <= r; ++j) {
+                        double d = distance(p[i], p[j]);
+                        if (d < dis) {
+                            dis = d;
+                            p1 = p[i];
+                            p2 = p[j];
+                        }
+                    }
+                }
+                return;
+            }
 
+            int m = (l + r) >> 1;
+            __getMinPair(l, m, p1, p2, dis); __getMinPair(m, r, p1, p2, dis);
+            vector<point> tmp;
+            for (int i = l; i <= r; ++i) if (abs(p[i].x - p[m].x) <= dis) tmp.push_back(p[i]);
+            sort(tmp.begin(), tmp.end(), [] (const point& a, const point& b) {
+                return a.y < b.y;
+            });
+            for (int i = 1; i < (int)tmp.size(); ++i) {
+                for (int j = i - 1; j >= 0; --j) {
+                    if (tmp[j].y < tmp[i].y - dis) break;
+                    double d = distance(tmp[i], tmp[j]);
+                    if (d < dis) {
+                        dis = d;
+                        p1 = tmp[i];
+                        p2 = tmp[j];
+                    }
+                }
+            }
         }
 
         pair<point, point> getMinPair() {
-            return pair<point, point>(point(), point());
+            assert(n >= 1);
+            if (n == 2) return make_pair(p[0], p[1]);
+
+            sort(p.begin(), p.end());
+            point p1 = p[0], p2 = p[1];
+            double dis = distance(p1, p2);
+            __getMinPair(0, n - 1, p1, p2, dis);
+            return make_pair(p1, p2);
         }
 
         double getMinDis() {
-            return DBL_MAX;
+            assert(n >= 1);
+            if (n == 2) return distance(p[0], p[1]);
+
+            sort(p.begin(), p.end(), [] (const point& a, const point& b) {
+                return a.x < b.x;
+            });
+            point p1 = p[0], p2 = p[1];
+            double dis = distance(p1, p2);
+            __getMinPair(0, n - 1, p1, p2, dis);
+            return dis;
         }
 
         // 最小圆覆盖(P2253, P1472)
@@ -558,12 +605,12 @@ namespace Geometry
                 c.p = (p[0] + p[i]) / 2; 
                 c.r = distance(p[0], p[i]) / 2;
 
-                for (int j = 0; j < i; ++j) {
+                for (int j = 1; j < i; ++j) {
                     if (c.relationToPoint(p[j]) == 2) continue;
                     c.p = (p[i] + p[j]) / 2;
                     c.r = distance(p[i], p[j]) / 2;
 
-                    for (int k = 0; k < j; ++k) {
+                    for (int k = 1; k < j; ++k) {
                         if (c.relationToPoint(p[k]) == 2) continue;
                         c = circle(p[i], p[j], p[k]);
                     }
@@ -599,7 +646,7 @@ namespace Geometry
 
     // 半平面
     struct halfplane{
-        double a, b, c;           // ax + by + c <= 0
+        double a, b, c;           // ax+by+c<=0
         halfplane(point a, point b) {
             a = a.y - b.y;
             b = b.x - a.x;
