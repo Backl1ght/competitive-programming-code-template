@@ -18,7 +18,7 @@ namespace Manacher {
     }
 
     // s[i-len[i]...i+len[i]] is palindromic
-    // len[i]-1 is palindromic radius in t
+    // len[i]-1 is palindromic length in t
     void manacher(char* t, int m) {
         init(t, m);
         for (int i = 1, l = 0, r = 0, k; i <= n; ++i) {
