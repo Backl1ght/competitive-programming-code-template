@@ -136,8 +136,8 @@ namespace Geometry
         return (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
     }
 
-    // LightOJ1203
-    // 最终答案会在凸包上，然后算ab与ac的夹角，单位为弧度
+    // LightOJ1203: 最终答案会在凸包上，然后算ab与ac的夹角，单位为弧度
+    // ab与ac的夹角
     double radian(point a, point b, point c) {
         return fabs(atan2(fabs(det(a, b, c)), dot(a, b, c)));
     }
@@ -151,8 +151,8 @@ namespace Geometry
     struct line
     {
         point s, e;         // 直线端点
-        double a, b, c;     // ax+by+c=0
-        double k;           // 斜率,[-pi, pi]
+        double a, b, c;     // ax + by + c = 0
+        double k;           // 斜率, 单位为弧度，[-pi, pi]
 
         line(point _s = point(), point _e = point()) : s(_s), e(_e) {
             k = atan2(e.y - s.y, e.x - s.x);
@@ -378,11 +378,11 @@ namespace Geometry
         }
 
         // 圆和圆的关系
-        //5 相离 
-        //4 外切 
-        //3 相交 
-        //2 内切 
-        //1 内含
+        // 5 相离 
+        // 4 外切 
+        // 3 相交 
+        // 2 内切 
+        // 1 内含
         int relationToCircle(circle c) {
             double d = distance(p, c.p);
             if(sgn(d - r - c.r) > 0) return 5;
@@ -558,12 +558,12 @@ namespace Geometry
                 c.p = (p[0] + p[i]) / 2; 
                 c.r = distance(p[0], p[i]) / 2;
 
-                for (int j = 1; j < i; ++j) {
+                for (int j = 0; j < i; ++j) {
                     if (c.relationToPoint(p[j]) == 2) continue;
                     c.p = (p[i] + p[j]) / 2;
                     c.r = distance(p[i], p[j]) / 2;
 
-                    for (int k = 1; k < j; ++k) {
+                    for (int k = 0; k < j; ++k) {
                         if (c.relationToPoint(p[k]) == 2) continue;
                         c = circle(p[i], p[j], p[k]);
                     }
@@ -599,7 +599,7 @@ namespace Geometry
 
     // 半平面
     struct halfplane{
-        double a, b, c;           // ax+by+c<=0
+        double a, b, c;           // ax + by + c <= 0
         halfplane(point a, point b) {
             a = a.y - b.y;
             b = b.x - a.x;
