@@ -137,6 +137,7 @@ namespace Geometry
 
     // LightOJ1203
     // 最终答案会在凸包上，然后算ab与ac的夹角，单位为弧度
+    // ab与ac的夹角
     double radian(point a, point b, point c) {
         return fabs(atan2(fabs(det(a, b, c)), dot(a, b, c)));
     }
@@ -144,6 +145,11 @@ namespace Geometry
     double angle(point a, point b, point c) {
         double r = radian(a, b, c);
         return radian2angle(r);
+    }
+
+    // 从点a，由b遮挡，能否看见c
+    bool canSee(point a, point b, point c) {
+        return sgn(det(a, b, c)) <= 0;
     }
 
     // 直线或者线段
@@ -377,11 +383,11 @@ namespace Geometry
         }
 
         // 圆和圆的关系
-        //5 相离 
-        //4 外切 
-        //3 相交 
-        //2 内切 
-        //1 内含
+        // 5 相离 
+        // 4 外切 
+        // 3 相交 
+        // 2 内切 
+        // 1 内含
         int relationToCircle(circle c) {
             double d = distance(p, c.p);
             if(sgn(d - r - c.r) > 0) return 5;
@@ -395,7 +401,6 @@ namespace Geometry
     }; 
 
     // 多边形
-    const int maxn = 1e5 + 5;
     struct polygon
     {
         int n;                  // 顶点个数
@@ -454,6 +459,7 @@ namespace Geometry
         }
 
         // 凸包(非严格)
+        // 若要求严格，则需要再将共线的点除了端点全删去
         polygon getComvex() {
             norm();
             if (n == 0) return polygon(0);
@@ -516,6 +522,7 @@ namespace Geometry
             point p1 = p[0], p2 = p[1];
             double dis = distance(p1, p2);
 
+            // 旋转卡(qia)壳(qiao)
             int k = 1;
             for (int i = 0; i < n; ++i) {
                 int j = (i + 1) % n;
@@ -594,7 +601,7 @@ namespace Geometry
         }
 
         // 最小圆覆盖(P2253, P1472)
-        // 随机顺序的点集上，期望复杂度为$ O(n) $
+        // 随机增量法求解最小圆覆盖问题，在随机顺序的点集上，期望复杂度为$ O(n) $
         circle getMinCircle() {
             // 随机打乱顺序
             for (int i = n - 1; i >= 1; --i) swap(p[i], p[rng() % i]);
@@ -645,8 +652,9 @@ namespace Geometry
     };
 
     // 半平面
+    // TBA: 半平面交
     struct halfplane{
-        double a, b, c;           // ax+by+c<=0
+        double a, b, c;           // ax + by + c <= 0
         halfplane(point a, point b) {
             a = a.y - b.y;
             b = b.x - a.x;
