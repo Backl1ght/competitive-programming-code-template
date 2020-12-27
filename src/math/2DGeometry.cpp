@@ -1,7 +1,7 @@
 namespace Geometry
 {
     // 定义以及防止精度出错
-    const double eps = 1e-10;
+    const double eps = 1e-8;
     const double inf = 1e9;
     const double pi = acos(-1.0);
 
@@ -11,16 +11,12 @@ namespace Geometry
         return 1;
     }
 
-    inline double Sqrt(const double& x) {
-        return sqrt(max(x , 0.0));
-    }
-
     // 单位换算
-    inline double angle2radian(const double& alpha) {
+    inline double degree2radian(const double& alpha) {
         return alpha / 180 * pi;
     }
 
-    inline double radian2angle(const double& alpha) {
+    inline double radian2degree(const double& alpha) {
         return alpha / pi * 180;
     }
 
@@ -70,10 +66,12 @@ namespace Geometry
             y=tx * sin(b) + ty * cos(b);
         }
 
+        // 逆时针旋转90度
         point trans90() {
             return point(-y, x);
         }
 
+        // 顺时针旋转90度
         point trans270() {
             return point(y, -x);
         }
@@ -144,7 +142,7 @@ namespace Geometry
 
     double angle(point a, point b, point c) {
         double r = radian(a, b, c);
-        return radian2angle(r);
+        return radian2degree(r);
     }
 
     // 从点a，由b遮挡，能否看见c
@@ -306,6 +304,10 @@ namespace Geometry
         }
     };
 
+    point getLineCrossLine(line l1, line l2) {
+        return l1.getCrossPoint(l2);
+    }
+
     // 向量表示法, 方向为由s -> e
     // struct line
     // {
@@ -412,10 +414,6 @@ namespace Geometry
 
         point& operator [] (int idx) { return p[idx]; }
 
-        void set(int idx, point _p) {
-            p[idx] = _p;
-        }
-
         void resize(int _n) {
             n = _n;
             p.resize(n);
@@ -451,7 +449,7 @@ namespace Geometry
             }
         };
 
-        // 标准化，即极角排序
+        // 标准化，即极角排序(逆时针)
         void norm() {
             point mi = p[0];
             for(int i = 1; i < n; i++) mi = min(mi, p[i]);
@@ -465,17 +463,17 @@ namespace Geometry
             if (n == 0) return polygon(0);
             else if(n == 1) {
                 polygon convex(1);
-                convex.set(0, p[0]);
+                convex[0] = p[0];
                 return convex;
             } else if (n == 2) {
                 if (p[0] == p[1]) {
                     polygon convex(1);
-                    convex.set(0, p[0]);
+                    convex[0] = p[0];
                     return convex;
                 }
                 polygon convex(2);
-                convex.set(0, p[0]);
-                convex.set(1, p[1]);
+                convex[0] = p[0];
+                convex[1] = p[1];
                 return convex;
             }
 
@@ -580,7 +578,9 @@ namespace Geometry
             assert(n >= 1);
             if (n == 2) return make_pair(p[0], p[1]);
 
-            sort(p.begin(), p.end());
+            sort(p.begin(), p.end(), [] (const point& a, const point& b) {
+                return a.x < b.x;
+            });
             point p1 = p[0], p2 = p[1];
             double dis = distance(p1, p2);
             __getMinPair(0, n - 1, p1, p2, dis);
@@ -604,7 +604,8 @@ namespace Geometry
         // 随机增量法求解最小圆覆盖问题，在随机顺序的点集上，期望复杂度为$ O(n) $
         circle getMinCircle() {
             // 随机打乱顺序
-            for (int i = n - 1; i >= 1; --i) swap(p[i], p[rng() % i]);
+            srand(time(0));
+            for (int i = n - 1; i >= 1; --i) swap(p[i], p[rand() % i]);
 
             circle c(p[0], 0);
             for (int i = 0; i < n; ++i) {
@@ -649,19 +650,104 @@ namespace Geometry
             }
             return cnt != 0;
         }
-    };
 
-    // 半平面
-    // TBA: 半平面交
-    struct halfplane{
-        double a, b, c;           // ax + by + c <= 0
-        halfplane(point a, point b) {
-            a = a.y - b.y;
-            b = b.x - a.x;
-            c = det(a, b);
+        void DEBUG() {
+            cout << n << endl;
+            for (int i = 0; i < n; ++i) {
+                cout << p[i].x << " " << p[i].y << endl;
+            }
         }
-
-        halfplane(double _a, double _b, double _c) : a(_a), b(_b), c(_c) {}
     };
+
+    // 半平面(ax + by + c >= 0), 其实也就是直线
+    // 对于直线(s, e), h.s为起点，h.e为方向向量(e - s)
+    struct halfplane {
+        point s, v;
+        double k;
+        halfplane() {}
+        halfplane(point _s, point _v) : s(_s), v(_v) {
+            k = v.alpha();
+        }
+        bool operator < (const halfplane& h) const {
+            return k < h.k;
+        }
+    };
+
+    // 点和半平面的位置关系
+    // 0 不在右侧
+    // 1 在右侧
+    int relationPointToHalfplane(point p, halfplane h) {
+        return sgn(det(h.v, p - h.s)) < 0;
+    }
+
+    // 半平面交点
+    point HalfplaneCrossHalfplane(halfplane h1, halfplane h2) {
+        double a = det(h2.v, h1.s - h2.s) / det(h1.v, h2.v);
+        return h1.s + h1.v * a;
+    }
+
+    // 从点集构造出半平面集
+    // 多边形的半平面集即为多边形边集
+    void getHalfPlanes(polygon& p, vector<halfplane>& h) {
+        if (p.direction() != 1) reverse(p.p.begin(), p.p.end());
+        int n = p.n;
+        for (int i = 0, j; i < n; ++i) {
+            j = (i + 1) % n;
+            h.push_back(halfplane(p[i], p[j] - p[i]));
+        } 
+    }
+
+    // 有时候题目给的不一定是闭合图形，需要自行添加边界
+    // (x1, y1)为矩形边界左下角，(x2, y2)为矩形边界右上角
+    // Usage: addBorderHalfPlanes(0, 0, 1e4, 1e4, h);
+    // POJ2451
+    void addBorderHalfPlanes(double x1, double y1, double x2, double y2, vector<halfplane>& h) {
+        polygon p(4);
+        p[0] = point(x1, y1);
+        p[1] = point(x2, y1);
+        p[2] = point(x2, y2);
+        p[3] = point(x1, y2);
+        getHalfPlanes(p, h);
+    }
+
+    // 半平面交
+    // 排序随机增量法(SI)求解半平面交，复杂度为$ O(n \log n) $
+    // 瓶颈为排序算法，用基数排序则为$ O(n) $
+    // 最终的结果为一个凸包，若少于3个点则说明无解
+
+    // 多边形的核: 位于多边形内且可以看到多边形内所有点的点集(P5969, POJ1279)
+    // 多边形的半平面交即为多边形的核(P4196)
+
+    // 多边形内部半径最大的圆(TODO)
+    // 求出半平面交，结果即为核内半径最大的圆
+
+    bool getHalfPlaneIntersection(vector<halfplane>& h, polygon& hpi) {
+        int n = int(h.size()), l, r;
+        sort(h.begin(), h.end());
+
+        vector<point> p(n);
+        vector<halfplane> q(n);
+
+        l = r = 0;
+        q[l] = h[0];
+        for (int i = 1; i < n; ++i) {
+            while(l < r && relationPointToHalfplane(p[r - 1], h[i])) --r;
+            while(l < r && relationPointToHalfplane(p[l], h[i])) ++l;
+            q[++r] = h[i];
+            if (l < r && sgn(det(q[r].v, q[r - 1].v)) == 0) {
+                --r;
+                if (!relationPointToHalfplane(h[i].s, q[r])) q[r] = h[i];
+            }
+            if (l < r) p[r - 1] = HalfplaneCrossHalfplane(q[r - 1], q[r]);
+        }
+        while(l < r && relationPointToHalfplane(p[r - 1], q[l])) --r;
+        if (r - l + 1 <= 2) return false; // 交不存在
+        p[r] = HalfplaneCrossHalfplane(q[l], q[r]);
+
+        hpi.resize(r - l + 1);
+        for (int i = l, j = 0; i <= r; ++i) hpi[j++] = p[i];
+
+        return true;
+    }
 }
 using namespace Geometry;
