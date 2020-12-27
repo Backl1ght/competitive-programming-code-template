@@ -718,9 +718,6 @@ namespace Geometry
     // 多边形的核: 位于多边形内且可以看到多边形内所有点的点集(P5969, POJ1279)
     // 多边形的半平面交即为多边形的核(P4196)
 
-    // 多边形内部半径最大的圆(TODO)
-    // 求出半平面交，结果即为核内半径最大的圆
-
     bool getHalfPlaneIntersection(vector<halfplane>& h, polygon& hpi) {
         int n = int(h.size()), l, r;
         sort(h.begin(), h.end());
@@ -748,6 +745,34 @@ namespace Geometry
         for (int i = l, j = 0; i <= r; ++i) hpi[j++] = p[i];
 
         return true;
+    }
+
+    // 多边形内部半径最大的圆半径(POJ3525)
+    // 二分半径，对多边形边集向内部进行平移，若平移后的多边形存在核，则可行
+    double getMaxInsideCircleRadius(polygon& p) {
+        if (p.direction() != 1) reverse(p.p.begin(), p.p.end());
+        int n = p.n;
+
+        // 方向向量, 垂直单位向量
+        vector<point> d(n), v(n); 
+        for (int i = 0; i < n; ++i) {
+            d[i] = p[(i + 1) % n] - p[i];
+            v[i] = d[i].trans90().unit();
+        }
+
+        double l = 0, r = 1e4, m;
+        while(r - l >= eps) {
+            m = (l + r) / 2;
+
+            vector<halfplane> h(n);
+            polygon hpi;
+            for (int i = 0; i < n; ++i) h[i] = halfplane(p[i] + v[i] * m, d[i]);
+            bool can = getHalfPlaneIntersection(h, hpi);
+
+            if (can) l = m;
+            else r = m;
+        }
+        return l;
     }
 }
 using namespace Geometry;
