@@ -9,15 +9,18 @@ public:
         void apply(int l, int r, ll addv) {
             // 更新节点信息
             // ie. 最大值+区间加: mx = mx + addv
+            
             ...
         }
     };
 
-    friend node operator + (const node& t1, const node& t2) {
+    friend node operator + (const node& tl, const node& tr) {
         node t;
         // 合并两个区间的信息
         // ie. 区间和: t.sum = t1.sum + t2.sum;
+
         ...
+
         return t;
     }
 
@@ -30,6 +33,7 @@ public:
         //     tr[rc].apply(mid + 1, r, tr[x].add);
         //     tr[x].add = 0;
         // }
+
         ...
     }
 
@@ -54,7 +58,6 @@ public:
 
     template<class T>
     void build(int x, int l, int r, const vector<T>& arr){
-        // Attention: 1-based!
         if (l == r) {
             tr[x].apply(l, r, arr[l]);
             return;
@@ -62,6 +65,18 @@ public:
         int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
         build(lc, l, mid, arr);
         build(rc, mid + 1, r, arr);
+        push_up(x);
+    }
+
+    template<class T>
+    void build(int x, int l, int r, T* arr){
+        if (l == r) {
+            tr[x].apply(l, r, arr[l]);
+            return;
+        }
+        int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
+        build(lc, l, mid);
+        build(rc, mid + 1, r);
         push_up(x);
     }
 
@@ -185,6 +200,14 @@ public:
         build(1, 1, n, arr);
     }
 
+    template<class T>
+    segtree(int _n, T* arr) {
+        n = _n;
+        assert(n > 0);
+        tr.resize((n << 2) + 5);
+        build(1, 1, n, arr);
+    }
+
     node get(int l, int r) {
         assert(l >= 1 && l <= r && r <= n);
         return get(1, 1, n, l, r);
@@ -237,10 +260,3 @@ public:
         #endif
     }
 };
-
-// 找第一个(最后一个满足条件的位置)
-// ie. 权值树第k大
-// const function<bool(const segtree::node&)> f = [] (const segtree::node& nd) {
-//     return nd.sum >= k;
-// };
-// find_first(1, n, f)
