@@ -8,6 +8,6 @@ int mul(int x, int y) {
 int sub(int x, int y) {
     return x - y < 0 ? x - y + MOD : x - y;
 }
-int div(int x, int y) {
-    return 1ll * x * qp(y, MOD - 2);
+int dvd(int x, int y) {
+    return 1ll * x * qp(y, MOD - 2) % MOD;
 }
