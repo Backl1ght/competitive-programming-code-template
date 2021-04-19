@@ -1,4 +1,3 @@
-// Referece: jiangly
 constexpr int P = 998244353;
 vector<int> rev, roots{0, 1};
 int power(int a, int b) {
@@ -175,6 +174,9 @@ struct poly {
             res[i + 1] = 1ll * a[i] * power(i + 1, P - 2) % P;
         return poly(res);
     }
+    poly rev() const {
+        return poly(vector<int>(a.rbegin(), a.rend()));
+    }
     poly inv(int m) const {
         poly x(power(a[0], P - 2));
         int k = 1;
@@ -183,9 +185,6 @@ struct poly {
             x = (x * (2 - modxk(k) * x)).modxk(k);
         }
         return x.modxk(m);
-    }
-    poly rev() const {
-        return poly(vector<int>(a.rbegin(), a.rend()));
     }
     poly log(int m) const {
         return (derivative() * inv(m)).integral().modxk(m);
@@ -207,6 +206,61 @@ struct poly {
             x = (x + (modxk(k) * x.inv(k)).modxk(k)) * ((P + 1) / 2);
         }
         return x.modxk(m);
+    }
+    poly sin() const {
+        int g = 3; // g: the ord of P
+        int i = power(g, (P - 1) / 4);
+        poly p = i * (*this);
+        p = p.exp(p.size());
+
+        poly q = (P - i) * (*this);
+        q = q.exp(q.size());
+
+        poly r = (p - q) * power(2 * i % P, P - 2);
+        return r;
+    }
+    poly cos() const {
+        int g = 3; // g: the ord of P
+        int i = power(g, (P - 1) / 4);
+        poly p = i * (*this);
+        p = p.exp(p.size());
+
+        poly q = (P - i) * (*this);
+        q = q.exp(q.size());
+
+        poly r = (p + q) * power(2, P - 2);
+        return r;
+    }
+    poly tan() const {
+        return sin() / cos();
+    }
+    poly cot() const {
+        return cos() / sin();
+    }
+    poly arcsin() {
+        poly sq = (*this) * (*this).modxk(size());
+        for (int i = 0; i < size(); ++i) sq.a[i] = sq.a[i] ? P - sq.a[i] : 0;
+        sq.a[0] = 1 + sq.a[0];
+        if (sq.a[0] >= P) sq.a[0] -= P;
+        poly r = (derivative() * sq.sqrt(size()).inv(size())).integral();
+        return r;
+    }
+    poly arccos() {
+        poly r = arcsin();
+        for (int i = 0; i < size(); ++i) r.a[i] = r.a[i] ? P - r.a[i] : 0;
+        return r;
+    }
+    poly arctan() {
+        poly sq = (*this) * (*this).modxk(size());
+        sq.a[0] = 1 + sq.a[0];
+        if (sq.a[0] >= P) sq.a[0] -= P;
+        poly r = (derivative() * sq.inv(size())).integral();
+        return r;
+    }
+    poly arccot() {
+        poly r = arctan();
+        for (int i = 0; i < size(); ++i) r.a[i] = r.a[i] ? P - r.a[i] : 0;
+        return r;
     }
     poly mulT(const poly& b) const {
         if (b.size() == 0)
