@@ -69,7 +69,6 @@ struct SGTree {
     {
         if (!rt) {
             rt = new_node(val);
-            if (!root) root = rt;
             return;
         }
         if (val == v[rt]) {

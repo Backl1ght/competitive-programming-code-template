@@ -1,0 +1,72 @@
+%==============================常用宏包、环境==============================%
+\documentclass[a4]{article}
+\usepackage{xeCJK} % For Chinese characters
+\usepackage{amsmath, amsthm}
+\usepackage[cache=false, outputdir=build]{minted}  % 代码插入与高亮
+\usepackage{geometry} % 设置页边距
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage{hyperref}[hidelinks] % 目录超链接
+\setsansfont{Consolas} % 设置英文字体
+\setmonofont[Mapping={}]{Consolas} % 英文引号之类的正常显示，相当于设置英文字体
+\geometry{left=1cm,right=1cm,top=2cm,bottom=0.5cm} % 页边距
+% \setlength{\columnsep}{30pt}
+% \setlength\columnseprule{0.4pt} % 分割线
+%==============================常用宏包、环境==============================%
+
+%==============================页眉、页脚==============================%
+% 页眉、页脚设置
+\pagestyle{fancy}
+% \lhead{CUMTB}
+\lhead{\CJKfamily{hei} Backlight's Code Template}
+\chead{}
+% \rhead{Page \thepage}
+\rhead{\CJKfamily{hei} 第 \thepage 页}
+\lfoot{} 
+\cfoot{}
+\rfoot{}
+\renewcommand{\headrulewidth}{0.4pt} 
+\renewcommand{\footrulewidth}{0.4pt}
+%==============================页眉、页脚==============================%
+
+%==============================标题和目录==============================%
+\title{\CJKfamily{hei} \bfseries Backlight's Code Template}
+\author{Backlight @ CSU}
+\renewcommand{\today}{\number\year 年 \number\month 月 \number\day 日}
+
+\begin{document}\small
+\begin{titlepage}
+  \maketitle
+\end{titlepage}
+
+\newpage
+\pagestyle{empty}
+\renewcommand{\contentsname}{目录}
+\tableofcontents
+\newpage\clearpage
+\newpage
+\pagestyle{fancy}
+\setcounter{page}{1}   %new page
+%==============================标题和目录==============================%
+
+
+%==============================正文部分==============================%
+\section{ds}
+\subsection{SGT}
+\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]{cpp}{src/ds/SGTree.cpp}
+\section{graph}
+\subsection{Dijkstra}
+\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]{cpp}{src/graph/Dijkstra.cpp}
+\section{math}
+\subsection{Lucas}
+\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]{cpp}{src/math/Lucas.cpp}
+\section{other}
+\subsection{BFPRT}
+\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]{cpp}{src/other/BFPRT.cpp}
+\section{string}
+\subsection{KMP}
+\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]{cpp}{src/string/KMP.cpp}
+
+%==============================正文部分==============================%
+\end{document}

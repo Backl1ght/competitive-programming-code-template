@@ -75,7 +75,7 @@ namespace Lucas {
         return ans;
     }
 
-    // solve n choose m (mod p) while p is a prime
+    // solve n choose m (mod p) while p might not be a prime
     ll exlucas(ll n, ll m, ll p) {
         ll x = p;
         ll ans = 0;

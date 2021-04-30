@@ -1,0 +1,11 @@
+content:
+  ds:
+    - SGT: 'ds/SGTree.cpp'
+  graph:
+    - Dijkstra: 'graph/Dijkstra.cpp'
+  math:
+    - Lucas: 'math/Lucas.cpp'
+  other:
+    - BFPRT: 'other/BFPRT.cpp'
+  string:
+    - KMP: 'string/KMP.cpp'
