@@ -1,5 +1,3 @@
-namespace Backlight {
-
 namespace Treap {
     using T = long long;
     const int S = N;
@@ -119,6 +117,4 @@ namespace Treap {
         DEBUG(rt);
         cerr << endl;
     }
-} // namespace Treap
-
-} // namespace Backlight
+}

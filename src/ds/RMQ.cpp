@@ -8,7 +8,7 @@ void init_rmq(int n) {
 void build_rmq(int n, int* a) {
     for (int i = 1; i <= n; ++i) mi[i][0] = a[i];
     for (int j = 1; j <= lg[n]; ++j) {
-        for (int i = 1; i + (1 << j) <= n; ++i) {
+        for (int i = 1; i + (1 << (j - 1)) <= n; ++i) {
             mi[i][j] = min(mi[i][j - 1], mi[i + (1 << (j - 1))][j - 1]);
         }
     }

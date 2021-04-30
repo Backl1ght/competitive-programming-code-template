@@ -1,5 +1,3 @@
-namespace Backlight {
-
 namespace LinkCutTree {
     using T = int;
     #define ls ch[x][0]
@@ -104,7 +102,4 @@ namespace LinkCutTree {
         return sum[y];
     }
 
-} // namespace LinkCutTree
-#define LCT LinkCutTree
-
-} // namespace Backlight
+}

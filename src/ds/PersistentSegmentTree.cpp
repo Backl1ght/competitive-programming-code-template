@@ -1,5 +1,3 @@
-namespace Backlight {
-
 namespace PersistentSegmentTree {
     using T = ll;
 
@@ -24,7 +22,4 @@ namespace PersistentSegmentTree {
         if (k <= lsum) return query(L[u], L[v], l, mid, k);
         return query(R[u], R[v], mid + 1, r, k - lsum);
     }
-} // namespace PersistentSegmentTree
-#define PST PersistentSegmentTree
-
-} // namespace Backlight
+}
