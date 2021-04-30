@@ -1,4 +1,5 @@
 import yaml
+import os
 
 config_path = './tex/config.yml'
 head_path = './tex/head'
@@ -26,7 +27,7 @@ def get_tail():
 def get_code(name, path):
     print(f'    - add code {name}: {path}')
     suf = path.split('.')[1]
-    path = 'src/' + path
+    path = path
     res = '\inputminted[mathescape,linenos,numbersep=5pt,frame=lines,framesep=2mm]' + \
         '{' + suf + '}' + '{' + path + '}' + '\n'
     return res
@@ -51,10 +52,33 @@ def get_section(content, section):
     return res
 
 
+def generate_config():
+    sections = os.listdir('src')
+    print(sections)
+
+    content = {}
+    for section in sections:
+        subsections = os.listdir('src/' + section)
+        print('  ', subsections)
+
+        a = []
+        for f in subsections:
+            name = f.split('.')[0]
+            path = 'src/' + section + '/' + f
+            print('      ', name, path)
+
+            a.append({name: path})
+        content[section] = a
+    config = {'content': content}
+
+    with open('tex/config.yml', 'w') as f:
+        yaml.safe_dump(config, f)
+
+    return config
+
+
 if __name__ == '__main__':
-    config_path = './tex/config.yml'
-    f = open(config_path, 'r', encoding='utf-8')
-    config = yaml.safe_load(f)
+    config = generate_config()
 
     print(config)
 
