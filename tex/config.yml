@@ -23,11 +23,13 @@ content:
   - BiGraphMatch: src/graph/BiGraphMatch.cpp
   - BiWraphMatch: src/graph/BiWraphMatch.cpp
   - BlockForest: src/graph/BlockForest.cpp
+  - BlockTree: src/graph/BlockTree.cpp
   - Dijkstra: src/graph/Dijkstra.cpp
   - dsu-on-tree: src/graph/dsu-on-tree.cpp
   - FullyDCP: src/graph/FullyDCP.cpp
   - Graph: src/graph/Graph.cpp
   - GraphMatch: src/graph/GraphMatch.cpp
+  - HLD-Edge: src/graph/HLD-Edge.cpp
   - Kosaraju: src/graph/Kosaraju.cpp
   - Kruskal: src/graph/Kruskal.cpp
   - LCA-HLD: src/graph/LCA-HLD.cpp
