@@ -37,4 +37,4 @@
 
 ## 参考
 
-本项目参考了https://github.com/jasison27/ACM-ICPC-CodeTemplate-Latex。
+本项目参考了[ACM-ICPC-CodeTemplate-Latex](https://github.com/jasison27/ACM-ICPC-CodeTemplate-Latex)。
