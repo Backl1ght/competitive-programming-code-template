@@ -1,3 +1,5 @@
+// https://loj.ac/p/6021
+// https://oi-wiki.org/graph/mst/#kruskal_1
 #include <bits/stdc++.h>
 using namespace std;
 #ifdef BACKLIGHT
