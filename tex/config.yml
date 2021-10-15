@@ -3,7 +3,9 @@ content:
   - AVLTree: src/ds/AVLTree.cpp
   - BTree: src/ds/BTree.cpp
   - CaptainMo: src/ds/CaptainMo.cpp
+  - CDQ: src/ds/CDQ.cpp
   - FenwickTree: src/ds/FenwickTree.cpp
+  - KDTree: src/ds/KDTree.cpp
   - LCT: src/ds/LCT.cpp
   - LefitstTree: src/ds/LefitstTree.cpp
   - PersistentSegmentTree: src/ds/PersistentSegmentTree.cpp
@@ -14,7 +16,6 @@ content:
   - SegmentTree: src/ds/SegmentTree.cpp
   - SGTree: src/ds/SGTree.cpp
   - Splay: src/ds/Splay.cpp
-  - Treap-dynamic: src/ds/Treap-dynamic.cpp
   - Treap-pointer: src/ds/Treap-pointer.cpp
   - Treap: src/ds/Treap.cpp
   graph:
@@ -26,6 +27,7 @@ content:
   - BlockTree: src/graph/BlockTree.cpp
   - Dijkstra: src/graph/Dijkstra.cpp
   - dsu-on-tree: src/graph/dsu-on-tree.cpp
+  - ExKruskal: src/graph/ExKruskal.cpp
   - FullyDCP: src/graph/FullyDCP.cpp
   - Graph: src/graph/Graph.cpp
   - GraphMatch: src/graph/GraphMatch.cpp
@@ -44,16 +46,20 @@ content:
   math:
   - 2DGeometry: src/math/2DGeometry.cpp
   - 3DGeometry: src/math/3DGeometry.cpp
+  - BigInt: src/math/BigInt.cpp
   - BSGS: src/math/BSGS.cpp
   - Cipolla: src/math/Cipolla.cpp
   - Combination: src/math/Combination.cpp
   - CRT: src/math/CRT.cpp
+  - du: src/math/du.cpp
   - EulerSeive: src/math/EulerSeive.cpp
   - eval: src/math/eval.cpp
   - EXGCD: src/math/EXGCD.cpp
   - FFT: src/math/FFT.cpp
+  - FWT: src/math/FWT.cpp
   - LinearBasis: src/math/LinearBasis.cpp
   - Lucas: src/math/Lucas.cpp
+  - min25: src/math/min25.cpp
   - Mint: src/math/Mint.cpp
   - Mobius: src/math/Mobius.cpp
   - Modular: src/math/Modular.cpp
@@ -61,6 +67,7 @@ content:
   - PollardRho: src/math/PollardRho.cpp
   - poly-struct: src/math/poly-struct.cpp
   - Poly: src/math/Poly.cpp
+  - PowerfulNumber: src/math/PowerfulNumber.cpp
   - Simplex: src/math/Simplex.cpp
   - SimpsonIntegral: src/math/SimpsonIntegral.cpp
   other:
@@ -80,5 +87,6 @@ content:
   - SAM: src/string/SAM.cpp
   - SqAM: src/string/SqAM.cpp
   - string-hash: src/string/string-hash.cpp
+  - SuffixBST: src/string/SuffixBST.cpp
   - Trie: src/string/Trie.cpp
   - ZAlgorithm: src/string/ZAlgorithm.cpp

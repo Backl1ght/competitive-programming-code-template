@@ -15,7 +15,8 @@ struct AVLTree {
     T v;
     int sz, h, cnt;
     node *l, *r;
-    explicit node(T _v) : v(_v) {
+    explicit node(T _v)
+        : v(_v) {
       sz = h = cnt = 1;
       l = r = nullptr;
     }
@@ -30,7 +31,8 @@ struct AVLTree {
   }
 
   void push_up(node* p) {
-    if (!p) return;
+    if (!p)
+      return;
     p->sz = get_size(p->l) + p->cnt + get_size(p->r);
     p->h = 1 + max(get_height(p->l), get_height(p->r));
   }
@@ -55,7 +57,8 @@ struct AVLTree {
   }
 
   void maintain(node*& p) {
-    if (!p) return;
+    if (!p)
+      return;
     if (get_height(p->l) - get_height(p->r) == -2) {
       if (p->r && get_height(p->r->l) > get_height(p->r->r)) {
         zag(p->r);
@@ -92,13 +95,15 @@ struct AVLTree {
   }
 
   void del(node*& p, T v) {
-    if (!p) return;
+    if (!p)
+      return;
     if (p->v == v) {
       --p->cnt;
       if (p->cnt == 0) {
         if (p->l && p->r) {
           node* q = p->r;
-          while (q->l) q = q->l;
+          while (q->l)
+            q = q->l;
           p->cnt = q->cnt, p->v = q->v;
           q->cnt = 1;
           del(p->r, q->v);
@@ -175,7 +180,8 @@ struct AVLTree {
       if (v == p->v) {
         node* q = p->l;
         if (q) {
-          while (q->r) q = q->r;
+          while (q->r)
+            q = q->r;
           res = q->v;
         }
         break;
@@ -184,7 +190,8 @@ struct AVLTree {
       if (v < p->v) {
         p = p->l;
       } else {
-        if (p->v > res) res = p->v;
+        if (p->v > res)
+          res = p->v;
         p = p->r;
       }
     }
@@ -198,14 +205,16 @@ struct AVLTree {
       if (v == p->v) {
         node* q = p->r;
         if (q) {
-          while (q->l) q = q->l;
+          while (q->l)
+            q = q->l;
           res = q->v;
         }
         break;
       }
 
       if (v < p->v) {
-        if (p->v < res) res = p->v;
+        if (p->v < res)
+          res = p->v;
         p = p->l;
       } else {
         p = p->r;
@@ -215,7 +224,8 @@ struct AVLTree {
   }
 
   void debug(node* p) {
-    if (!p) return;
+    if (!p)
+      return;
     debug(p->l);
     cerr << p->v << " ";
     debug(p->r);
@@ -266,6 +276,7 @@ int main() {
 #endif
   int T = 1;
   //    scanf("%d", &T);
-  for (int _ = 1; _ <= T; ++_) solve(_);
+  for (int _ = 1; _ <= T; ++_)
+    solve(_);
   return 0;
 }

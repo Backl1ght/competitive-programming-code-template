@@ -7,13 +7,17 @@ using ll = int64_t;
 const int N = 1e5 + 5;
 const int MAXV = 2e5 + 5;
 int k, c[MAXV];
-inline int lb(int x) { return x & (-x); }
+inline int lb(int x) {
+  return x & (-x);
+}
 void add(int x, int d) {
-  for (; x <= k; x += lb(x)) c[x] += d;
+  for (; x <= k; x += lb(x))
+    c[x] += d;
 }
 int getsum(int x) {
   int ret = 0;
-  for (; x; x -= lb(x)) ret += c[x];
+  for (; x; x -= lb(x))
+    ret += c[x];
   return ret;
 }
 
@@ -28,17 +32,20 @@ struct node {
 
 int cnt[N];
 void CDQ(int l, int r) {
-  if (l == r) return;
+  if (l == r)
+    return;
   int mid = (l + r) >> 1;
   CDQ(l, mid);
   CDQ(mid + 1, r);
 
   sort(a + l, a + 1 + mid, [](const node& x, const node& y) -> bool {
-    if (x.b != y.b) return x.b < y.b;
+    if (x.b != y.b)
+      return x.b < y.b;
     return x.c < y.c;
   });
   sort(a + mid + 1, a + 1 + r, [](const node& x, const node& y) -> bool {
-    if (x.b != y.b) return x.b < y.b;
+    if (x.b != y.b)
+      return x.b < y.b;
     return x.c < y.c;
   });
 
@@ -51,16 +58,20 @@ void CDQ(int l, int r) {
     a[p2].ans += getsum(a[p2].c);
   }
 
-  for (int i = l; i < p1; ++i) add(a[i].c, -a[i].w);
+  for (int i = l; i < p1; ++i)
+    add(a[i].c, -a[i].w);
 }
 
 int main() {
   scanf("%d %d", &m, &k);
-  for (int i = 1; i <= m; ++i) b[i].input();
+  for (int i = 1; i <= m; ++i)
+    b[i].input();
 
   sort(b + 1, b + 1 + m, [](const node& x, const node& y) -> bool {
-    if (x.a != y.a) return x.a < y.a;
-    if (x.b != y.b) return x.b < y.b;
+    if (x.a != y.a)
+      return x.a < y.a;
+    if (x.b != y.b)
+      return x.b < y.b;
     return x.c < y.c;
   });
 
@@ -76,7 +87,9 @@ int main() {
   }
   CDQ(1, n);
   for (int i = 1; i <= n; ++i)
-    if (a[i].ans + a[i].w - 1 < m) cnt[a[i].ans + a[i].w - 1] += a[i].w;
-  for (int i = 0; i < m; ++i) printf("%d\n", cnt[i]);
+    if (a[i].ans + a[i].w - 1 < m)
+      cnt[a[i].ans + a[i].w - 1] += a[i].w;
+  for (int i = 0; i < m; ++i)
+    printf("%d\n", cnt[i]);
   return 0;
 }

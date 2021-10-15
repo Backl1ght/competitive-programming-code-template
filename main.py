@@ -1,5 +1,6 @@
 import yaml
 import os
+from subprocess import call
 
 config_path = './tex/config.yml'
 head_path = './tex/head'
@@ -68,6 +69,12 @@ def generate_config():
             print('      ', name, path)
 
             a.append({name: path})
+
+            # code format
+            if path.endswith('.cpp') or path.endswith('.h'):
+                path = path.replace('/', "\\")
+                lc = ['clang-format', '-i', '--style=file', os.getcwd() + '\\' + path]
+                call(lc)
         content[section] = a
     config = {'content': content}
 
