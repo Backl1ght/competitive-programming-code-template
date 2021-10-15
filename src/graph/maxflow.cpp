@@ -36,7 +36,7 @@ namespace Backlight {
             assert(1 <= t && t <= V);
             assert(s != t);
 
-            vector<int> f(V + 1), d(V + 1), st(V + 1);
+            vector<int> f(V + 1), d(V + 1);
 
             auto bfs = [&] () {
                 fill(d.begin(), d.end(), -1);
