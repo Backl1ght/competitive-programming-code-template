@@ -24,6 +24,8 @@ class Matrix {
   }
 
  public:
+  Matrix() : n_(0), m_(0) {}
+
   Matrix(const MatrixDataType& a) : n_(a.size()), m_(a[0].size()), a_(a) {}
 
   Matrix(const Matrix& matrix) : n_(matrix.n_), m_(matrix.m_), a_(matrix.a_) {}
@@ -77,7 +79,7 @@ std::string to_string(const Matrix<ValueType>& matrix) {
   for (size_t i = 0; i < matrix.n(); ++i) {
     ss << "[";
     for (size_t j = 0; j < matrix.m(); ++j) {
-      ss << matrix[i][j] << ", "[j == matrix.m() - 1];
+      ss << matrix.at(i, j).value() << ",]"[j == matrix.m() - 1];
     }
     ss << ",]"[i == matrix.n() - 1];
   }
