@@ -3,7 +3,7 @@ class Modular {
  private:
   ValueType value_;
 
-  ValueType normalize(ValueType value) {
+  ValueType normalize(ValueType value) const {
     if (value >= 0 && value < mod_)
       return value;
     value %= mod_;
@@ -12,7 +12,7 @@ class Modular {
     return value;
   }
 
-  ValueType power(ValueType value, size_t exponent) {
+  ValueType power(ValueType value, size_t exponent) const {
     ValueType result = 1;
     ValueType base = value;
     while (exponent) {
@@ -32,7 +32,7 @@ class Modular {
   Modular inv() const { return Modular(power(value_, mod_ - 2)); }
 
   Modular power(size_t exponent) const {
-    return Modular(power(value, exponent));
+    return Modular(power(value_, exponent));
   }
 
   friend Modular operator+(const Modular& lhs, const Modular& rhs) {
@@ -55,7 +55,7 @@ class Modular {
   }
 
   friend Modular operator/(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() * rhs.inv();
+    ValueType result = SupperType(1) * lhs.value() * rhs.inv().value() % mod_;
     return Modular(result);
   }
 };
@@ -78,5 +78,5 @@ StreamType& operator>>(StreamType& in,
   modular = Modular<ValueType, mod, SupperType>(value);
   return in;
 }
-using mint = Modular<int, 1'000'000'007>;
-// using mint = Modular<int, 998'244'353>;
+// using Mint = Modular<int, 1'000'000'007>;
+using Mint = Modular<int, 998'244'353>;
