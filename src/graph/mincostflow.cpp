@@ -59,7 +59,9 @@ struct mcmf_graph {
         q.pop();
         inq[u] = false;
         for (int i = h[u]; i != -1; i = e[i].nxt) {
-          int v = e[i].v, _cap = e[i].cap, _cost = e[i].cost;
+          int v = e[i].v;
+          Cap _cap = e[i].cap;
+          Cost _cost = e[i].cost;
           if (_cap == 0 || dis[v] <= dis[u] + _cost)
             continue;
           dis[v] = dis[u] + _cost;
