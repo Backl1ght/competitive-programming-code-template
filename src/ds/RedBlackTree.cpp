@@ -21,7 +21,6 @@ using u64 = uint64_t;
 void solve_case(int Case);
 
 int main(int argc, char* argv[]) {
-  freopen(argv[1], "r", stdin);
   CPPIO;
   int T = 1;
   // std::cin >> T;
