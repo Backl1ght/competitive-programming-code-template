@@ -1,57 +1,45 @@
 #include <bits/stdc++.h>
-using namespace std;
+#include "to_string.h"
 
 template <typename T>
-inline void _dbg(const char* format, T value) {
-  cerr << format << '=' << value << endl;
+inline void _logd(const char* format, T value) {
+  std::cerr << format << '=' << to_string(value) << std::endl;
 }
 
 template <typename First, typename... Rest>
-inline void _dbg(const char* format, First f, Rest... r) {
+inline void _logd(const char* format, First f, Rest... r) {
   while (*format != ',')
-    cerr << *format++;
-  cerr << '=' << f << ", ";
-  _dbg(format + 1, r...);
+    std::cerr << *format++;
+  std::cerr << '=' << to_string(f) << ",";
+  _logd(format + 1, r...);
 }
 
-template <typename T>
-ostream& operator<<(ostream& os, vector<T> V) {
-  os << "[ ";
-  for (auto v : V)
-    os << v << ",";
-  return os << " ]";
-}
+#define logd(...)                \
+  std::cerr << __LINE__ << ": "; \
+  _logd(#__VA_ARGS__, __VA_ARGS__);
 
-template <typename T>
-ostream& operator<<(ostream& os, set<T> V) {
-  os << "[ ";
-  for (auto v : V)
-    os << v << ",";
-  return os << " ]";
-}
+namespace LocalStackLimit {
+#include <sys/resource.h>
+class StackLimitHelper {
+ public:
+  StackLimitHelper(int limit) {
+    // set min stack size to $limit MB
+    const rlim_t kStackSize = limit * 1024 * 1024;
+    struct rlimit rl;
+    int result;
 
-template <typename T>
-ostream& operator<<(ostream& os, multiset<T> V) {
-  os << "[ ";
-  for (auto v : V)
-    os << v << ",";
-  return os << " ]";
-}
-
-template <typename T1, typename T2>
-ostream& operator<<(ostream& os, map<T1, T2> V) {
-  os << "[ ";
-  for (auto v : V)
-    os << v << ",";
-  return os << " ]";
-}
-
-template <typename L, typename R>
-ostream& operator<<(ostream& os, pair<L, R> P) {
-  return os << "(" << P.first << "," << P.second << ")";
-}
-
-#define debug(...)                 \
-  cerr << "\033[31m";              \
-  _dbg(#__VA_ARGS__, __VA_ARGS__); \
-  cerr << "\033[0m";
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0) {
+      if (rl.rlim_cur < kStackSize) {
+        rl.rlim_cur = kStackSize;
+        result = setrlimit(RLIMIT_STACK, &rl);
+        if (result != 0) {
+          fprintf(stderr, "setrlimit returned result = %d\n", result);
+        }
+      }
+    }
+    fprintf(stderr, "set min stack size to %lu MB\n", kStackSize / 1024 / 1024);
+  }
+};
+static StackLimitHelper _(256);
+}  // namespace LocalStackLimit
