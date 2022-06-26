@@ -1,98 +1,156 @@
-namespace Backlight {
+// Problem: P3376 【模板】网络最大流
+// Contest: Luogu
+// URL: https://www.luogu.com.cn/problem/P3376
+// Memory Limit: 128 MB
+// Time Limit: 2000 ms
+//
+// Powered by CP Editor (https://cpeditor.org)
 
-template <typename Cap>
-struct mf_graph {
-  static const Cap INF = numeric_limits<Cap>::max();
+#include <bits/stdc++.h>
 
+#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
+
+#ifdef BACKLIGHT
+#include "debug.h"
+#else
+#define logd(...) ;
+#endif
+
+using i64 = int64_t;
+using u64 = uint64_t;
+
+void solve_case(int Case);
+
+int main(int argc, char* argv[]) {
+  CPPIO;
+  int T = 1;
+  // std::cin >> T;
+  for (int t = 1; t <= T; ++t) {
+    solve_case(t);
+  }
+  return 0;
+}
+
+template <typename CapacityType>
+class MaxFlowGraph {
   struct Edge {
-    int v, nxt;
-    Cap c, f;
+    int from, to;
+    CapacityType capacity, flow;
     Edge() {}
-    Edge(int _v, int _nxt, Cap _c)
-        : v(_v), nxt(_nxt), c(_c), f(0) {}
+    Edge(int _from, int _to, CapacityType _capacity, CapacityType _flow)
+        : from(_from), to(_to), capacity(_capacity), flow(_flow) {}
   };
 
-  int V, E;
-  vector<int> h;
-  vector<Edge> e;
+  int n_;
+  int m_;
+  std::vector<Edge> edges_;
+  std::vector<std::vector<int>> adjacent_;
 
-  mf_graph()
-      : V(0) {}
-  mf_graph(int _V)
-      : V(_V), h(_V + 1, -1) {}
+ public:
+  explicit MaxFlowGraph(int n) : n_(n), m_(0), edges_(0), adjacent_(n) {}
 
-  inline void addarc(int u, int v, Cap c) {
-    assert(1 <= u && u <= V);
-    assert(1 <= v && v <= V);
-    assert(0 <= c);
+  void AddEdge(int from, int to, CapacityType capacity) {
+    assert(0 <= from and from < n_);
+    assert(0 <= to and to < n_);
 
-    e.push_back(Edge(v, h[u], c));
-    h[u] = e.size() - 1;
+    edges_.emplace_back(from, to, capacity, 0);
+    adjacent_[from].push_back(m_);
+    ++m_;
+
+    edges_.emplace_back(to, from, 0, 0);
+    adjacent_[to].push_back(m_);
+    ++m_;
   }
 
-  inline void addedge(int u, int v, Cap c) {
-    addarc(u, v, c);
-    addarc(v, u, 0);
-  }
+  CapacityType Dinic(int src, int dst) {
+    const static CapacityType INF = std::numeric_limits<CapacityType>::max();
+    std::vector<int> level(n_);
+    std::vector<int> start_index(n_);
 
-  Cap maxflow(int s, int t) {
-    assert(1 <= s && s <= V);
-    assert(1 <= t && t <= V);
-    assert(s != t);
+    std::function<bool()> bfs = [&]() -> bool {
+      std::fill(level.begin(), level.end(), -1);
 
-    vector<int> f(V + 1), d(V + 1);
+      std::queue<int> q;
+      q.push(src);
+      level[src] = 0;
 
-    auto bfs = [&]() {
-      fill(d.begin(), d.end(), -1);
-      queue<int> q;
-      q.push(s);
-      d[s] = 0;
       while (!q.empty()) {
         int u = q.front();
         q.pop();
-        for (int i = h[u]; i != -1; i = e[i].nxt) {
-          int v = e[i].v;
-          if (e[i].c > e[i].f && d[v] == -1) {
-            d[v] = d[u] + 1;
-            if (v == t)
+
+        for (int edge_id : adjacent_[u]) {
+          auto [from, to, capacity, flow] = edges_[edge_id];
+          CapacityType residual_capacity = capacity - flow;
+          if (residual_capacity > 0 && level[to] == -1) {
+            level[to] = level[u] + 1;
+            if (to == dst)
               break;
-            q.push(v);
+            q.push(to);
           }
         }
       }
-      return (d[t] != -1);
+
+      return level[dst] != -1;
     };
 
-    auto dfs = [&](auto self, int u, Cap up) {
-      if (u == t || up == 0)
-        return up;
-      Cap res = 0;
-      for (int& i = f[u]; i != -1; i = e[i].nxt) {
-        int v = e[i].v;
-        if (d[u] + 1 == d[v]) {
-          Cap nf = self(self, v, min(up, e[i].c - e[i].f));
-          if (nf <= 0)
+    std::function<CapacityType(int, CapacityType)> dfs =
+        [&](int u, CapacityType max_augment) -> CapacityType {
+      if (u == dst)
+        return max_augment;
+
+      if (max_augment == 0)
+        return 0;
+
+      CapacityType total_augment = 0;
+      int i = start_index[u];
+      for (; i < (int)adjacent_[u].size(); ++i) {
+        int edge_id = adjacent_[u][i];
+        auto [from, to, capacity, flow] = edges_[edge_id];
+        if (level[to] == level[u] + 1) {
+          CapacityType residual_capacity = capacity - flow;
+          CapacityType new_augment = dfs(to, std::min(max_augment, residual_capacity));
+          if (new_augment <= 0)
             continue;
-          up -= nf;
-          res += nf;
-          e[i].f += nf;
-          e[i ^ 1].f -= nf;
-          if (up == 0)
+
+          max_augment -= new_augment;
+          total_augment += new_augment;
+          edges_[edge_id].flow += new_augment;
+          edges_[edge_id ^ 1].flow -= new_augment;
+
+          if (max_augment == 0)
             break;
         }
       }
-      if (res == 0)
-        d[u] = -1;
-      return res;
+      start_index[u] = i;
+
+      if (total_augment == 0)
+        level[u] = -1;
+
+      return total_augment;
     };
 
-    Cap res = 0;
+    CapacityType max_flow = 0;
     while (bfs()) {
-      f = h;
-      res += dfs(dfs, s, INF);
+      std::fill(start_index.begin(), start_index.end(), 0);
+      CapacityType new_flow = dfs(src, INF);
+      logd(new_flow);
+      max_flow += new_flow;
     }
-    return res;
+
+    return max_flow;
   }
 };
 
-}  // namespace Backlight
+void solve_case(int Case) {
+  int n, m, s, t;
+  std::cin >> n >> m >> s >> t;
+  --s, --t;
+  MaxFlowGraph<i64> g(n);
+  for (int i = 0, u, v, w; i < m; ++i) {
+    std::cin >> u >> v >> w;
+    --u, --v;
+    g.AddEdge(u, v, w);
+  }
+  std::cout << g.Dinic(s, t) << "\n";
+}
