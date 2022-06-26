@@ -1,22 +1,36 @@
-const int LG = log2(N) + 1;
-int mi[N][LG], lg[N];
-void init_rmq(int n) {
-  lg[1] = 0;
-  for (int i = 2; i <= n; ++i)
-    lg[i] = lg[i >> 1] + 1;
-}
+template <typename ValueType>
+class RMQ {
+ private:
+  using Operator = std::function<ValueType(ValueType, ValueType)>;
 
-void build_rmq(int n, int* a) {
-  for (int i = 1; i <= n; ++i)
-    mi[i][0] = a[i];
-  for (int j = 1; j <= lg[n]; ++j) {
-    for (int i = 1; i + (1 << (j - 1)) <= n; ++i) {
-      mi[i][j] = min(mi[i][j - 1], mi[i + (1 << (j - 1))][j - 1]);
+  int n_;
+  std::vector<std::vector<ValueType>> a_;
+  std::vector<int> lg_;
+  Operator op_;
+
+ public:
+  RMQ(const std::vector<ValueType>& a, Operator op) : op_(op) {
+    n_ = a.size();
+
+    lg_.resize(n_ + 1);
+    lg_[1] = 0;
+    for (int i = 2; i <= n_; ++i)
+      lg_[i] = lg_[i >> 1] + 1;
+
+    a_.resize(n_);
+    for (int i = 0; i < n_; ++i) {
+      a_[i].resize(lg_[n_] + 1);
+      a_[i][0] = a[i];
+    }
+    for (int j = 1; j <= lg_[n_]; ++j) {
+      for (int i = 0; i + (1 << (j - 1)) < n_; ++i) {
+        a_[i][j] = op_(a_[i][j - 1], a_[i + (1 << (j - 1))][j - 1]);
+      }
     }
   }
-}
 
-int rmqMin(int l, int r) {
-  int k = lg[r - l + 1];
-  return min(mi[l][k], mi[r - (1 << k) + 1][k]);
-}
+  ValueType get(int l, int r) {
+    int k = lg_[r - l + 1];
+    return op_(a_[l][k], a_[r - (1 << k) + 1][k]);
+  }
+};
