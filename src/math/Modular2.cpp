@@ -25,6 +25,8 @@ class Modular {
   }
 
  public:
+  Modular() : value_(0) {}
+
   Modular(const ValueType& value) : value_(normalize(value)) {}
 
   ValueType value() const { return value_; }
@@ -80,3 +82,26 @@ StreamType& operator>>(StreamType& in,
 }
 // using Mint = Modular<int, 1'000'000'007>;
 using Mint = Modular<int, 998'244'353>;
+
+class Binom {
+ private:
+  std::vector<Mint> f, g;
+
+ public:
+  Binom(int n) {
+    f.resize(n + 1);
+    g.resize(n + 1);
+
+    f[0] = Mint(1);
+    for (int i = 1; i <= n; ++i)
+      f[i] = f[i - 1] * Mint(i);
+    g[n] = f[n].inv();
+    for (int i = n - 1; i >= 0; --i)
+      g[i] = g[i + 1] * Mint(i + 1);
+  }
+  Mint operator()(int n, int m) {
+    if (n < 0 || m < 0 || m > n)
+      return Mint(0);
+    return f[n] * g[m] * g[n - m];
+  }
+};
