@@ -1,53 +1,56 @@
-int tot, head[N];
-struct Edge {
-  int v, nxt;
-} e[M];
-
-void addedge(int u, int v) {
-  ++tot;
-  e[tot] = (Edge){v, head[u]};
-  head[u] = tot;
-  ++tot;
-  e[tot] = (Edge){u, head[v]};
-  head[v] = tot;
-}
-
-int h[N], f[N], sz[N], son[N], top[N];
-void dfs1(int u, int fa) {
-  h[u] = h[fa] + 1;
-  f[u] = fa;
-  sz[u] = 1;
-  son[u] = 0;
-  for (int i = head[u]; i; i = e[i].nxt) {
-    int v = e[i].v;
-    if (v == fa)
-      continue;
-    dfs1(v, u);
-    sz[u] += sz[v];
-    if (sz[v] > sz[son[u]])
-      son[u] = v;
+class LCA {
+ private:
+  int n_;
+  const std::vector<std::vector<int>>& g_;
+  std::vector<int> f, sz, son, dep, top;
+ 
+  void dfs1(int u, int fa) {
+    f[u] = fa;
+    sz[u] = 1;
+    son[u] = -1;
+    for (int v : g_[u]) {
+      if (v == fa)
+        continue;
+      dep[v] = dep[u] + 1;
+      dfs1(v, u);
+      sz[u] += sz[v];
+      if (son[u] == -1 || sz[v] > sz[son[u]])
+        son[u] = v;
+    }
   }
-}
-
-void dfs2(int u, int fa, int tp) {
-  top[u] = tp;
-  if (son[u])
-    dfs2(son[u], u, tp);
-  for (int i = head[u]; i; i = e[i].nxt) {
-    int v = e[i].v;
-    if (v == fa || v == son[u])
-      continue;
-    dfs2(v, u, v);
+ 
+  void dfs2(int u, int fa, int tp) {
+    top[u] = tp;
+    if (son[u] != -1)
+      dfs2(son[u], u, tp);
+    for (int v : g_[u]) {
+      if (v == fa || v == son[u])
+        continue;
+      dfs2(v, u, v);
+    }
   }
-}
-
-int LCA(int u, int v) {
-  while (top[u] != top[v]) {
-    if (h[top[u]] < h[top[v]])
-      swap(u, v);
-    u = f[top[u]];
+ 
+ public:
+  LCA(const std::vector<std::vector<int>>& g) : n_(g.size()), g_(g) {
+    dep.resize(n_);
+    f.resize(n_);
+    sz.resize(n_);
+    son.resize(n_);
+    top.resize(n_);
+ 
+    dep[0] = 0;
+    dfs1(0, 0);
+    dfs2(0, 0, 0);
   }
-  if (h[u] > h[v])
-    swap(u, v);
-  return u;
-}
+ 
+  int lca(int u, int v) {
+    while (top[u] != top[v]) {
+      if (dep[top[u]] < dep[top[v]])
+        std::swap(u, v);
+      u = f[top[u]];
+    }
+    if (dep[u] > dep[v])
+      std::swap(u, v);
+    return u;
+  }
+};
