@@ -2,22 +2,23 @@
 #include "to_string.h"
 
 template <typename T>
-inline void _logd(const char* format, T value) {
-  std::cerr << format << '=' << to_string(value) << std::endl;
+inline void logd_impl(const char* format, T value) {
+  std::cerr << format << '=' << serialize(value) << std::endl;
 }
 
 template <typename First, typename... Rest>
-inline void _logd(const char* format, First f, Rest... r) {
+inline void logd_impl(const char* format, First f, Rest... r) {
   while (*format != ',')
     std::cerr << *format++;
-  std::cerr << '=' << to_string(f) << ",";
-  _logd(format + 1, r...);
+  std::cerr << '=' << serialize(f) << ",";
+  logd_impl(format + 1, r...);
 }
 
 #define logd(...)                \
   std::cerr << __LINE__ << ": "; \
-  _logd(#__VA_ARGS__, __VA_ARGS__);
+  logd_impl(#__VA_ARGS__, __VA_ARGS__);
 
+#if defined(__linux__)
 namespace LocalStackLimit {
 #include <sys/resource.h>
 class StackLimitHelper {
@@ -41,5 +42,6 @@ class StackLimitHelper {
     fprintf(stderr, "set min stack size to %lu MB\n", kStackSize / 1024 / 1024);
   }
 };
+#endif
 static StackLimitHelper _(256);
 }  // namespace LocalStackLimit
