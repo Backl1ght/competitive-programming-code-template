@@ -1,225 +1,193 @@
-namespace Backlight {
+// Problem: P4718 【模板】Pollard-Rho算法
+// Contest: Luogu
+// URL: https://www.luogu.com.cn/problem/P4718
+// Memory Limit: 125 MB
+// Time Limit: 2000 ms
+//
+// Powered by CP Editor (https://cpeditor.org)
 
-namespace Pollard_Rho {
-typedef long long ll;
-typedef pair<ll, ll> PLL;
-mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count());
+#include <bits/stdc++.h>
 
-const int N = 1010000;
-ll C, fac[10010], n, mut, a[1001000];
-int T, cnt, i, l, prime[N], p[N], psize, _cnt;
-ll _e[100], _pr[100];
-vector<ll> d;
+#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
 
-inline ll mul(ll a, ll b, ll p) {
-  if (p <= 1000000000)
-    return a * b % p;
-  else if (p <= 1000000000000ll)
-    return (((a * (b >> 20) % p) << 20) + (a * (b & ((1 << 20) - 1)))) % p;
-  else {
-    ll d = (ll)floor(a * (long double)b / p + 0.5);
-    ll ret = (a * b - d * p) % p;
-    if (ret < 0)
-      ret += p;
-    return ret;
+#ifdef BACKLIGHT
+#include "debug.h"
+#else
+#define logd(...) ;
+#endif
+
+using i64 = int64_t;
+using u64 = uint64_t;
+using i128 = __int128_t;
+
+void solve_case(int Case);
+
+int main(int argc, char* argv[]) {
+  CPPIO;
+  int T = 1;
+  std::cin >> T;
+  for (int t = 1; t <= T; ++t) {
+    solve_case(t);
   }
+  return 0;
 }
 
-void prime_table() {
-  int i, j, tot, t1;
-  for (i = 1; i <= psize; i++)
-    p[i] = i;
-  for (i = 2, tot = 0; i <= psize; i++) {
-    if (p[i] == i)
-      prime[++tot] = i;
-    for (j = 1; j <= tot && (t1 = prime[j] * i) <= psize; j++) {
-      p[t1] = prime[j];
-      if (i % prime[j] == 0)
+namespace PollardRho {
+
+/**
+ * @TODO: __int128_t is ugly, try optimize it.
+ */
+
+static std::mt19937_64 rng_(std::chrono::steady_clock::now().time_since_epoch().count());
+
+inline int64_t Rand(int64_t l, int64_t r) {
+  return l + rng_() % (r - l + 1);
+}
+
+inline int64_t Add(int64_t a, int64_t b, int64_t mod) {
+  return ((__int128_t)a + b) % mod;
+}
+
+inline int64_t Substract(int64_t a, int64_t b, int64_t mod) {
+  return (((__int128_t)a - b) % mod + mod) % mod;
+}
+
+inline int64_t Multiply(int64_t a, int64_t b, int64_t mod) {
+  return (__int128_t)a * b % mod;
+}
+
+inline int64_t Power(int64_t a, int64_t b, int64_t mod) {
+  int64_t r = 1;
+  while (b) {
+    if (b & 1)
+      r = Multiply(r, a, mod);
+    a = Multiply(a, a, mod);
+    b >>= 1;
+  }
+  return r;
+}
+
+// Time Complexity: $O(k \log^{3} n)$
+bool MillerRabinTest(int64_t n) {
+  // Strong enough for $n < 2^64$, see https://oeis.org/A014233.
+  constexpr static int kTestRounds = 12;
+  constexpr static int kTestBase[kTestRounds] = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37};
+
+  if (n <= kTestBase[kTestRounds - 1]) {
+    return *std::lower_bound(kTestBase, kTestBase + kTestRounds, n) == n;
+  }
+
+  int64_t d = n - 1, r = 0;
+  while (d % 2 == 0) {
+    d >>= 1;
+    r = r + 1;
+  }
+
+  for (int round = 0; round < kTestRounds; ++round) {
+    int64_t a = kTestBase[round];
+
+    // Fermet primality test.
+    int64_t x = Power(a, d, n);
+    if (x == 1 || x == n - 1)
+      continue;
+
+    // Witness primality test.
+    for (int i = 0; i < r - 1; ++i) {
+      x = Multiply(x, x, n);
+      if (x == n - 1)
         break;
     }
+    if (x != n - 1)
+      return false;
   }
+
+  return true;
 }
 
-void init(int ps) {
-  psize = ps;
-  prime_table();
-}
+int64_t Rho(int64_t n) {
+  // Can not factor 4 because the faster step gap is 2.
+  if (n == 4)
+    return 2;
 
-ll powl(ll a, ll n, ll p) {
-  ll ans = 1;
-  for (; n; n >>= 1) {
-    if (n & 1)
-      ans = mul(ans, a, p);
-    a = mul(a, a, p);
-  }
-  return ans;
-}
+  const static int kMaxStepSize = 1 << 7;
 
-bool witness(ll a, ll n) {
-  int t = 0;
-  ll u = n - 1;
-  for (; ~u & 1; u >>= 1)
-    t++;
-  ll x = powl(a, u, n), _x = 0;
-  for (; t; t--) {
-    _x = mul(x, x, n);
-    if (_x == 1 && x != 1 && x != n - 1)
-      return 1;
-    x = _x;
-  }
-  return _x != 1;
-}
+  int64_t c;
+  std::function<int64_t(int64_t)> f = [&n, &c](int64_t x) { return Add(Multiply(x, x, n), c, n); };
 
-bool miller(ll n) {
-  if (n < 2)
-    return 0;
-  if (n <= psize)
-    return p[n] == n;
-  if (~n & 1)
-    return 0;
-  for (int j = 0; j <= 7; j++)
-    if (witness(rnd() % (n - 1) + 1, n))
-      return 0;
-  return 1;
-}
-
-ll gcd(ll a, ll b) {
-  ll ret = 1;
-  while (a != 0) {
-    if ((~a & 1) && (~b & 1))
-      ret <<= 1, a >>= 1, b >>= 1;
-    else if (~a & 1)
-      a >>= 1;
-    else if (~b & 1)
-      b >>= 1;
-    else {
-      if (a < b)
-        swap(a, b);
-      a -= b;
-    }
-  }
-  return ret * b;
-}
-
-ll rho(ll n) {
+  // Since n is not a prime, there must be a non-trivial factor of n.
   for (;;) {
-    ll X = rnd() % n, Y, Z, T = 1, *lY = a, *lX = lY;
-    int tmp = 20;
-    C = rnd() % 10 + 3;
-    X = mul(X, X, n) + C;
-    *(lY++) = X;
-    lX++;
-    Y = mul(X, X, n) + C;
-    *(lY++) = Y;
-    for (; X != Y;) {
-      ll t = X - Y + n;
-      Z = mul(T, t, n);
-      if (Z == 0)
-        return gcd(T, n);
-      tmp--;
-      if (tmp == 0) {
-        tmp = 20;
-        Z = gcd(Z, n);
-        if (Z != 1 && Z != n)
-          return Z;
+    /**
+     * Brent's cycle finding method, and replace k gcd steps with k - 1 multiplications
+     * modulo n and a single gcd.
+     * reference: https://en.wikipedia.org/wiki/Pollard%27s_rho_algorithm#Variants.
+     */
+    c = Rand(3, n - 1);
+
+    int64_t x = Rand(0, n - 1);
+    int64_t t = f(x), r = f(t);
+    int64_t goal = 1, curr = 1;
+    int64_t d1, d2 = 1;
+    while (t != r) {
+      d1 = Multiply(d2, std::abs(r - t), n);
+      if (d1 == 0) {
+        break;
+      } else {
+        d2 = d1;
       }
-      T = Z;
-      Y = *(lY++) = mul(Y, Y, n) + C;
-      Y = *(lY++) = mul(Y, Y, n) + C;
-      X = *(lX++);
+
+      if (curr % kMaxStepSize == 0) {
+        int64_t d = std::gcd(d2, n);
+        if (d != 1 && d != n)
+          return d;
+      }
+
+      if (curr == goal) {
+        int64_t d = std::gcd(d2, n);
+        if (d != 1 && d != n)
+          return d;
+
+        t = r;
+        goal = goal * 2;
+        curr = 0;
+      }
+
+      r = f(r);
+      ++curr;
     }
   }
 }
 
-void _factor(ll n) {
-  for (int i = 0; i < cnt; i++) {
-    if (n % fac[i] == 0)
-      n /= fac[i], fac[cnt++] = fac[i];
-  }
-  if (n <= psize) {
-    for (; n != 1; n /= p[n])
-      fac[cnt++] = p[n];
-    return;
-  }
-  if (miller(n))
-    fac[cnt++] = n;
-  else {
-    ll x = rho(n);
-    _factor(x);
-    _factor(n / x);
-  }
+std::vector<int64_t> Factor(int64_t n) {
+  std::vector<int64_t> factors;
+  std::function<void(int64_t)> factor = [&](int64_t n) {
+    if (n < 2)
+      return;
+
+    if (MillerRabinTest(n)) {
+      factors.push_back(n);
+    } else {
+      int64_t x = Rho(n);
+      while (n % x == 0)
+        n /= x;
+      factor(x);
+      factor(n);
+    }
+  };
+  factor(n);
+  std::sort(factors.begin(), factors.end());
+  return factors;
 }
 
-void dfs(ll x, int dep) {
-  if (dep == _cnt)
-    d.push_back(x);
-  else {
-    dfs(x, dep + 1);
-    for (int i = 1; i <= _e[dep]; i++)
-      dfs(x *= _pr[dep], dep + 1);
-  }
+};  // namespace PollardRho
+
+void solve_case(int Case) {
+  int64_t n;
+  std::cin >> n;
+  auto f = PollardRho::Factor(n);
+
+  if (f.size() == 1 and n == f.back())
+    std::cout << "Prime\n";
+  else
+    std::cout << f.back() << "\n";
 }
-
-void norm() {
-  sort(fac, fac + cnt);
-  _cnt = 0;
-  for (int i = 0; i < cnt; ++i)
-    if (i == 0 || fac[i] != fac[i - 1])
-      _pr[_cnt] = fac[i], _e[_cnt++] = 1;
-    else
-      _e[_cnt - 1]++;
-}
-
-vector<ll> getd() {
-  d.clear();
-  dfs(1, 0);
-  return d;
-}
-
-/**************************************************/
-
-// Attention: call init() before use
-
-// get all factors
-vector<ll> factorA(ll n) {
-  cnt = 0;
-  _factor(n);
-  norm();
-  vector<ll> d = getd();
-  sort(d.begin(), d.end());
-  return d;
-}
-
-// get prime factors
-vector<ll> factorP(ll n) {
-  cnt = 0;
-  _factor(n);
-  norm();
-  vector<ll> d(_cnt);
-  for (int i = 0; i < _cnt; ++i)
-    d[i] = _pr[i];
-  return d;
-}
-
-// get prime factors, n = pr_i^e_i
-vector<PLL> factorG(ll n) {
-  cnt = 0;
-  _factor(n);
-  norm();
-  vector<PLL> d(_cnt);
-  for (int i = 0; i < _cnt; ++i)
-    d[i] = make_pair(_pr[i], _e[i]);
-  return d;
-}
-
-bool is_primitive(ll a, ll p) {
-  assert(miller(p));
-  vector<PLL> D = factorG(p - 1);
-  for (int i = 0; i < (int)D.size(); ++i)
-    if (powl(a, (p - 1) / D[i].first, p) == 1)
-      return 0;
-  return 1;
-}
-}  // namespace Pollard_Rho
-
-}  // namespace Backlight
