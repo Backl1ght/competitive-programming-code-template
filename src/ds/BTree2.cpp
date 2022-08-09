@@ -84,8 +84,10 @@ class BTree {
     }
 
     ~Node() {
-      for (int i = 0; i <= num_keys_; ++i) {
-        freep(child_[i]);
+      if (num_keys_ > 0) {
+        for (int i = 0; i <= num_keys_; ++i) {
+          freep(child_[i]);
+        }
       }
     }
 
@@ -93,24 +95,60 @@ class BTree {
       size_ = 0;
       for (int i = 0; i < num_keys_; ++i)
         size_ += keys_[i].second;
-      for (int i = 0; i <= num_keys_; ++i)
-        size_ += GetSize(child_[i]);
+      if (num_keys_ > 0) {
+        for (int i = 0; i <= num_keys_; ++i)
+          size_ += GetSize(child_[i]);
+      }
+    }
+
+    std::string to_string() {
+      std::stringstream ss;
+
+      ss << "  Node " << (void*)(this) << " [\n";
+
+      ss << "    SIZE: " << size_ << ",\n";
+      ss << "    TYPE: " << (is_leaf_ ? "leaf" : "internal") << ",\n";
+
+      ss << "    NUM_KEYS: " << num_keys_ << ",\n";
+      ss << "    KEY: [";
+      for (int i = 0; i < num_keys_; ++i) {
+        ss << "(" << keys_[i].first << "," << keys_[i].second << "),";
+      }
+      ss << "],\n";
+
+      ss << "    CHILD: [";
+      for (int i = 0; i <= num_keys_; ++i) {
+        ss << (void*)(child_[i]) << ",";
+      }
+      ss << "]\n";
+
+      ss << "  ],\n";
+
+      return ss.str();
     }
   };
 
-  static int GetSize(Node* p) {
+  inline static int GetSize(Node* p) {
     if (p == nullptr)
       return 0;
     return p->size_;
   }
+
+  /**
+   * Create a new node.
+   *
+   * In case of disgusting problem with strict time limit, it could easily adapt to stategy that
+   * pre-allocate a large buffer as a pool to reduce time cost on memory allocation.
+   */
+  inline Node* CreateNode() { return new Node(); }
 
  private:
   /**
    * Right shift a suffix of array.
    */
   template <typename T>
-  void RightShiftByOne(T* arr, int start, int length) {
-    for (int i = start + length - 1; i >= start + 1; --i) {
+  void RightShiftByOne(T* arr, int begin, int end) {
+    for (int i = end; i >= begin + 1; --i) {
       arr[i] = arr[i - 1];
     }
   }
@@ -119,8 +157,8 @@ class BTree {
    * Right shift a suffix of array.
    */
   template <typename T>
-  void LeftShiftByOne(T* arr, int start, int length) {
-    for (int i = start - 1; i < start + length - 1; ++i) {
+  void LeftShiftByOne(T* arr, int begin, int end) {
+    for (int i = begin - 1; i < end; ++i) {
       arr[i] = arr[i + 1];
     }
   }
@@ -141,7 +179,7 @@ class BTree {
                                       return element.first < value;
                                     }) -
                    p->keys_;
-    bool value_exist = (value == p->keys_[position].first);
+    bool value_exist = (position < p->num_keys_ && value == p->keys_[position].first);
     return std::make_pair(value_exist, position);
   }
 
@@ -156,8 +194,8 @@ class BTree {
     assert(p->num_keys_ == 2 * D - 1);
 
     ElementType key = p->keys_[D - 1];
-    Node* l = new Node();
-    Node* r = new Node();
+    Node* l = CreateNode();
+    Node* r = CreateNode();
 
     // TODO: Set parent of l and r to p->parent_ maybe better.
     l->parent_ = r->parent_ = nullptr;
@@ -165,20 +203,19 @@ class BTree {
     l->num_keys_ = r->num_keys_ = D - 1;
     for (int i = 0; i < D - 1; ++i) {
       l->keys_[i] = p->keys_[i];
-      l->child_[i] = p->child_[i];
-
       r->keys_[i] = p->keys_[D + i];
-      r->child_[i + 1] = p->child_[D + i];
     }
-    l->child_[D - 1] = p->child_[D - 1];
-    r->child_[0] = p->child_[D];
+    for (int i = 0; i < D; ++i) {
+      l->child_[i] = p->child_[i];
+      r->child_[i] = p->child_[D + i];
+    }
 
     l->is_leaf_ = r->is_leaf_ = p->is_leaf_;
 
     l->MaintainSize();
     r->MaintainSize();
 
-    p->num_keys_ = 0;
+    p->num_keys_ = -1;
     freep(p);
 
     return std::make_tuple(key, l, r);
@@ -200,14 +237,14 @@ class BTree {
       ++p->keys_[position].second;
     } else {
       if (p->is_leaf_) {
-        RightShiftByOne(p->keys_, position, p->num_keys_ - position);
+        RightShiftByOne(p->keys_, position, p->num_keys_);
         p->keys_[position] = std::make_pair(value, 1);
         ++p->num_keys_;
       } else {
         if (p->child_[position]->num_keys_ == 2 * D - 1) {
           auto [new_key, l, r] = Split(p->child_[position]);
-          RightShiftByOne(p->keys_, position, p->num_keys_ - position);
-          RightShiftByOne(p->child_, position + 1, p->num_keys_ - position);
+          RightShiftByOne(p->keys_, position, p->num_keys_);
+          RightShiftByOne(p->child_, position + 1, p->num_keys_ + 1);
           p->child_[position] = l;
           p->keys_[position] = new_key;
           p->child_[position + 1] = r;
@@ -244,7 +281,7 @@ class BTree {
     assert(b != nullptr);
     assert(a->num_keys_ == D - 1);
 
-    Node* p = new Node();
+    Node* p = CreateNode();
     {
       p->parent_ = nullptr;
 
@@ -264,9 +301,9 @@ class BTree {
       p->MaintainSize();
     }
 
-    a->num_keys_ = 0;
+    a->num_keys_ = -1;
     freep(a);
-    b->num_keys_ = 0;
+    b->num_keys_ = -1;
     freep(b);
 
     return p;
@@ -290,9 +327,8 @@ class BTree {
         if (p->is_leaf_) {
           // Node p is a leaf, and based on the deletion strategy, it is safe to
           // delete the key directly.
-          LeftShiftByOne(p->keys_, position + 1, p->num_keys_ - position - 1);
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
           --p->num_keys_;
-          logd("XXXXX", value);
         } else {
           // Need borrow or merge.
           //
@@ -323,9 +359,9 @@ class BTree {
           } else {
             // Merge.
             Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
-            LeftShiftByOne(p->keys_, position + 1, p->num_keys_ - position - 1);
+            LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
             p->child_[position] = np;
-            LeftShiftByOne(p->child_, position + 2, p->num_keys_ - position - 1);
+            LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
             --p->num_keys_;
 
             if (root_->num_keys_ == 0) {
@@ -342,7 +378,6 @@ class BTree {
         // value does not exist, do nothing.
       } else {
         if (p->child_[position]->num_keys_ > D - 1) {
-          logd("Safe delete");
           // Safe to make deletion.
           Delete(p->child_[position], value);
         } else {
@@ -350,16 +385,16 @@ class BTree {
 
           if (position > 0 && p->child_[position - 1]->num_keys_ > D - 1) {
             // Borrow one key from previous child, like right rotate.
-            // That is,use the largest value inside the previous child as key,
-            // and then insert the old key to itself.
+            // That is, use the largest value inside the previous child as key,
+            // and then insert the old key to itself. (Note that it is largest value inside node,
+            // not subtree).
             Node* np = p->child_[position - 1];
-            while (!np->is_leaf_)
-              np = np->child_[np->num_keys_];
             ElementType new_key = np->keys_[np->num_keys_ - 1];
             Node* rightmost_child = np->child_[np->num_keys_];
             --np->num_keys_;
 
             std::swap(p->keys_[position], new_key);
+            np->MaintainSize();
 
             RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
             RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
@@ -370,18 +405,18 @@ class BTree {
             Delete(p->child_[position], value);
           } else if (position < p->num_keys_ && p->child_[position + 1]->num_keys_ > D - 1) {
             // Borrow one key from next child, like left rotate.
-            // That is,use the smallest value inside the next child as key, and
-            // then insert the old key to itself.
+            // That is, use the smallest value inside the next child as key, and
+            // then insert the old key to itself. (Note that it is smallest value inside node, not
+            // subtree).
             Node* np = p->child_[position + 1];
-            while (!np->is_leaf_)
-              np = np->child_[0];
             ElementType new_key = np->keys_[0];
             Node* leftmost_child = np->child_[0];
-            LeftShiftByOne(np->keys_, 1, np->num_keys_ - 1);
-            LeftShiftByOne(np->child_, 1, np->num_keys_);
+            LeftShiftByOne(np->keys_, 1, np->num_keys_);
+            LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
             --np->num_keys_;
 
             std::swap(p->keys_[position], new_key);
+            np->MaintainSize();
 
             p->child_[position]->keys_[p->child_[position]->num_keys_] = new_key;
             p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
@@ -393,9 +428,9 @@ class BTree {
             // previous has higher priority for merge.
             position = position == 0 ? position : position - 1;
             Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
-            LeftShiftByOne(p->keys_, position + 1, p->num_keys_ - position - 1);
+            LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
             p->child_[position] = np;
-            LeftShiftByOne(p->child_, position + 2, p->num_keys_ - position - 1);
+            LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
             --p->num_keys_;
 
             if (root_->num_keys_ == 0) {
@@ -423,7 +458,7 @@ class BTree {
 
   void Insert(const ValueType& value) {
     if (root_ == nullptr) {
-      root_ = new Node();
+      root_ = CreateNode();
       root_->parent_ = nullptr;
       root_->num_keys_ = 1;
       root_->keys_[0] = std::make_pair(value, 1);
@@ -437,7 +472,7 @@ class BTree {
     if (root_->num_keys_ == 2 * D - 1) {
       auto [new_key, l, r] = Split(root_);
 
-      Node* new_root = new Node();
+      Node* new_root = CreateNode();
       new_root->parent_ = nullptr;
       new_root->num_keys_ = 1;
       new_root->keys_[0] = new_key;
@@ -468,24 +503,35 @@ class BTree {
 
   ValueType GetNext(const ValueType& value) { return ValueType(0); }
 
-  std::string to_string() const {
+  std::string to_string(Node* p) const {
     std::stringstream ss;
     ss << "BTree: [\n";
+
     std::function<void(Node*)> dfs = [&](Node* p) {
       if (p == nullptr)
         return;
-      ss << "Node " << (void*)(p) << " " << (p->is_leaf_ ? "leaf" : "internal") << " [\n";
-      ss << "  KEY: [";
-      for (int i = 0; i < p->num_keys_; ++i) {
-        ss << "(" << p->keys_[i].first << "," << p->keys_[i].second << "),";
-      }
-      ss << "]\n";
-      ss << "  CHILD: [";
+
+      ss << p->to_string();
+
       for (int i = 0; i <= p->num_keys_; ++i) {
-        ss << (void*)(p->child_[i]) << ",";
+        dfs(p->child_[i]);
       }
-      ss << "]\n";
-      ss << "],\n";
+    };
+    dfs(p);
+
+    ss << "]";
+    return ss.str();
+  }
+
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "BTree: [\n";
+
+    std::function<void(Node*)> dfs = [&](Node* p) {
+      if (p == nullptr)
+        return;
+
+      ss << p->to_string();
 
       for (int i = 0; i <= p->num_keys_; ++i) {
         dfs(p->child_[i]);
@@ -516,6 +562,7 @@ void solve_case(int Case) {
   for (int i = 1, x; i <= n; ++i) {
     x = i;
     t.Delete(x);
+    logd(x);
     logd(t.to_string());
   }
 
