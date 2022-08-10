@@ -41,7 +41,6 @@ int main() {
  * then finish the operation.
  *
  * TODO(backlight):
- * - It seems like insertion and deletion is ok, finish other method.
  * - The maintainance of size of subtrees can be improved. It is
  * not necessary to re-calculate the size of subtrees each time.
  * - There are servaral memory copy operations, use apis like memcpy or memmove
@@ -93,9 +92,14 @@ class BTree {
 
     void MaintainSize() {
       size_ = 0;
-      for (int i = 0; i < num_keys_; ++i)
-        size_ += keys_[i].second;
+
       if (num_keys_ > 0) {
+        for (int i = 0; i < num_keys_; ++i) {
+          assert(keys_[i].second > 0);
+          assert(i == 0 || (i > 0 && keys_[i - 1].first < keys_[i].first));
+        }
+        for (int i = 0; i < num_keys_; ++i)
+          size_ += keys_[i].second;
         for (int i = 0; i <= num_keys_; ++i)
           size_ += GetSize(child_[i]);
       }
@@ -205,9 +209,13 @@ class BTree {
       l->keys_[i] = p->keys_[i];
       r->keys_[i] = p->keys_[D + i];
     }
-    for (int i = 0; i < D; ++i) {
-      l->child_[i] = p->child_[i];
-      r->child_[i] = p->child_[D + i];
+    if (!p->is_leaf_) {
+      for (int i = 0; i < D; ++i) {
+        l->child_[i] = p->child_[i];
+        l->child_[i]->parent_ = l;
+        r->child_[i] = p->child_[D + i];
+        r->child_[i]->parent_ = r;
+      }
     }
 
     l->is_leaf_ = r->is_leaf_ = p->is_leaf_;
@@ -291,9 +299,15 @@ class BTree {
         p->keys_[i] = a->keys_[i];
         p->keys_[D + i] = b->keys_[i];
       }
-      for (int i = 0; i < D; ++i) {
-        p->child_[i] = a->child_[i];
-        p->child_[D + i] = b->child_[i];
+
+      if (!a->is_leaf_) {
+        for (int i = 0; i < D; ++i) {
+          p->child_[i] = a->child_[i];
+          p->child_[D + i] = b->child_[i];
+        }
+        for (int i = 0; i < 2 * D; ++i) {
+          p->child_[i]->parent_ = p;
+        }
       }
 
       p->is_leaf_ = a->is_leaf_;
@@ -321,6 +335,8 @@ class BTree {
     auto [value_exist, position] = GetPosition(p, value);
 
     if (value_exist) {
+      assert(position < p->num_keys_);
+
       if (p->keys_[position].second > 1) {
         --p->keys_[position].second;
       } else {
@@ -346,6 +362,10 @@ class BTree {
             while (!np->is_leaf_)
               np = np->child_[np->num_keys_];
             std::swap(p->keys_[position], np->keys_[np->num_keys_ - 1]);
+            while (np != p) {
+              np->MaintainSize();
+              np = np->parent_;
+            }
 
             Delete(p->child_[position], value);
           } else if (p->child_[position + 1]->num_keys_ > D - 1) {
@@ -354,6 +374,10 @@ class BTree {
             while (!np->is_leaf_)
               np = np->child_[0];
             std::swap(p->keys_[position], np->keys_[0]);
+            while (np != p) {
+              np->MaintainSize();
+              np = np->parent_;
+            }
 
             Delete(p->child_[position + 1], value);
           } else {
@@ -361,6 +385,7 @@ class BTree {
             Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
             LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
             p->child_[position] = np;
+            np->parent_ = p;
             LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
             --p->num_keys_;
 
@@ -393,14 +418,20 @@ class BTree {
             Node* rightmost_child = np->child_[np->num_keys_];
             --np->num_keys_;
 
-            std::swap(p->keys_[position], new_key);
-            np->MaintainSize();
+            std::swap(p->keys_[position - 1], new_key);
 
             RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
-            RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
+            if (!np->is_leaf_)
+              RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
             p->child_[position]->keys_[0] = new_key;
-            p->child_[position]->child_[0] = rightmost_child;
+            if (!np->is_leaf_) {
+              p->child_[position]->child_[0] = rightmost_child;
+              rightmost_child->parent_ = p->child_[position];
+            }
             ++p->child_[position]->num_keys_;
+
+            np->MaintainSize();
+            p->child_[position]->MaintainSize();
 
             Delete(p->child_[position], value);
           } else if (position < p->num_keys_ && p->child_[position + 1]->num_keys_ > D - 1) {
@@ -412,15 +443,21 @@ class BTree {
             ElementType new_key = np->keys_[0];
             Node* leftmost_child = np->child_[0];
             LeftShiftByOne(np->keys_, 1, np->num_keys_);
-            LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
+            if (!np->is_leaf_)
+              LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
             --np->num_keys_;
 
             std::swap(p->keys_[position], new_key);
-            np->MaintainSize();
 
             p->child_[position]->keys_[p->child_[position]->num_keys_] = new_key;
-            p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
+            if (!np->is_leaf_) {
+              p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
+              leftmost_child->parent_ = p->child_[position];
+            }
             ++p->child_[position]->num_keys_;
+
+            np->MaintainSize();
+            p->child_[position]->MaintainSize();
 
             Delete(p->child_[position], value);
           } else {
@@ -430,6 +467,7 @@ class BTree {
             Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
             LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
             p->child_[position] = np;
+            np->parent_ = p;
             LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
             --p->num_keys_;
 
@@ -493,15 +531,105 @@ class BTree {
     if (root_ == nullptr)
       return;
     Delete(root_, value);
+    if (root_->num_keys_ == 0) {
+      freep(root_);
+    }
   }
 
-  size_t GetRank(const ValueType& value) { return 0; }
+  int GetRank(const ValueType& value) {
+    int rank = 0;
 
-  ValueType GetKth(const size_t& k) { return ValueType(0); }
+    Node* p = root_;
+    while (p) {
+      assert(p->num_keys_ >= 1);
 
-  ValueType GetPrev(const ValueType& value) { return ValueType(0); }
+      if (value > p->keys_[p->num_keys_ - 1].first) {
+        rank += GetSize(p) - GetSize(p->child_[p->num_keys_]);
+        p = p->child_[p->num_keys_];
+        continue;
+      }
 
-  ValueType GetNext(const ValueType& value) { return ValueType(0); }
+      for (int i = 0; i < p->num_keys_; ++i) {
+        if (value < p->keys_[i].first) {
+          p = p->child_[i];
+          break;
+        } else {
+          rank += GetSize(p->child_[i]);
+        }
+
+        if (value == p->keys_[i].first) {
+          return rank + 1;
+        } else {
+          rank += p->keys_[i].second;
+        }
+      }
+    }
+
+    return rank + 1;
+  }
+
+  ValueType GetKth(int k) {
+    assert(k >= 1 && k <= GetSize(root_));
+
+    Node* p = root_;
+    while (true) {
+      assert(p->num_keys_ >= 1);
+
+      if (k > GetSize(p) - GetSize(p->child_[p->num_keys_])) {
+        k -= GetSize(p) - GetSize(p->child_[p->num_keys_]);
+        p = p->child_[p->num_keys_];
+        continue;
+      }
+
+      for (int i = 0; i < p->num_keys_; ++i) {
+        if (k <= GetSize(p->child_[i])) {
+          assert(p->is_leaf_ == false);
+          p = p->child_[i];
+          break;
+        } else {
+          k -= GetSize(p->child_[i]);
+        }
+
+        if (k <= p->keys_[i].second) {
+          return p->keys_[i].first;
+        } else {
+          k -= p->keys_[i].second;
+        }
+      }
+    }
+
+    assert(false);
+  }
+
+  ValueType GetPrev(const ValueType& value) {
+    ValueType result;
+
+    Node* p = root_;
+    while (p) {
+      auto [_, position] = GetPosition(p, value);
+      if (position)
+        result = p->keys_[position - 1].first;
+      p = p->child_[position];
+    }
+
+    return result;
+  }
+
+  ValueType GetNext(const ValueType& value) {
+    ValueType result;
+
+    Node* p = root_;
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
+      if (value_exist)
+        ++position;
+      if (position < p->num_keys_)
+        result = p->keys_[position].first;
+      p = p->child_[position];
+    }
+
+    return result;
+  }
 
   std::string to_string(Node* p) const {
     std::stringstream ss;
@@ -550,20 +678,11 @@ class BTree {
 void solve_case(int Case) {
   int n, q;
   std::cin >> n >> q;
-  logd(n, q);
 
-  BTree<int, 3> t;
+  BTree<int, 5> t;
   for (int i = 1, x; i <= n; ++i) {
-    x = i;
+    std::cin >> x;
     t.Insert(x);
-    logd(t.to_string());
-  }
-
-  for (int i = 1, x; i <= n; ++i) {
-    x = i;
-    t.Delete(x);
-    logd(x);
-    logd(t.to_string());
   }
 
   int ans = 0;
