@@ -41,9 +41,6 @@ int main() {
  * then finish the operation.
  *
  * TODO(backlight):
- * - Insertion and Deletion can be done using non-recurse method.
- * - The maintainance of size of subtrees can be improved. It is
- * not necessary to re-calculate the size of subtrees each time.
  * - There are servaral memory copy operations, use apis like memcpy or memmove
  * instead of native loop may be more effective.
  * - Increase or decrease the height of tree only when needed maybe more
@@ -338,158 +335,171 @@ class BTree {
    * from brother or merge two nodes to ensure that deletion will not break the
    * rules, and then make deletion.
    */
-  void Delete(Node* p, const ValueType& value) {
-    auto [value_exist, position] = GetPosition(p, value);
+  void DeleteInternal(const ValueType& value) {
+    Node* p = root_;
 
-    if (value_exist) {
-      assert(position < p->num_keys_);
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
 
-      if (p->keys_[position].second > 1) {
-        --p->keys_[position].second;
-      } else {
+      if (value_exist) {
+        if (p->keys_[position].second > 1) {
+          --p->keys_[position].second;
+          while (p != nullptr) {
+            --p->size_;
+            p = p->parent_;
+          }
+          break;
+        }
+
         if (p->is_leaf_) {
           // Node p is a leaf, and based on the deletion strategy, it is safe to
           // delete the key directly.
           LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
           --p->num_keys_;
-        } else {
-          // Need borrow or merge.
-          //
-          // If the previous child or the next child has enough node, just
-          // borrow one key from it, that is, like deletion in BST, find a
-          // replacement(pioneer or succssor) and replace, and then delete
-          // recursively.
-          //
-          // Otherwise merge these two nodes and the key to be
-          // deleted into one node. Now it is safe to delete key in the new
-          // node.
-          if (p->child_[position]->num_keys_ > D - 1) {
-            // Use pioneer as replacement.
-            Node* np = p->child_[position];
-            while (!np->is_leaf_)
-              np = np->child_[np->num_keys_];
-            std::swap(p->keys_[position], np->keys_[np->num_keys_ - 1]);
-            while (np != p) {
-              np->MaintainSize();
-              np = np->parent_;
-            }
-
-            Delete(p->child_[position], value);
-          } else if (p->child_[position + 1]->num_keys_ > D - 1) {
-            // Use successor as replacement.
-            Node* np = p->child_[position + 1];
-            while (!np->is_leaf_)
-              np = np->child_[0];
-            std::swap(p->keys_[position], np->keys_[0]);
-            while (np != p) {
-              np->MaintainSize();
-              np = np->parent_;
-            }
-
-            Delete(p->child_[position + 1], value);
-          } else {
-            // Merge.
-            Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
-            LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
-            p->child_[position] = np;
-            np->parent_ = p;
-            LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
-            --p->num_keys_;
-
-            if (root_->num_keys_ == 0) {
-              root_ = p->child_[position];
-              root_->parent_ = nullptr;
-            }
-
-            Delete(p->child_[position], value);
+          while (p != nullptr) {
+            --p->size_;
+            p = p->parent_;
           }
+          break;
         }
-      }
-    } else {
-      if (p->is_leaf_) {
-        // value does not exist, do nothing.
+
+        // Need borrow or merge.
+        //
+        // If the previous child or the next child has enough node, just
+        // borrow one key from it, that is, like deletion in BST, find a
+        // replacement(pioneer or succssor) and replace, and then delete
+        // recursively.
+        //
+        // Otherwise merge these two nodes and the key to be
+        // deleted into one node. Now it is safe to delete key in the new
+        // node.
+        if (p->child_[position]->num_keys_ > D - 1) {
+          // Use pioneer as replacement.
+          Node* np = p->child_[position];
+          while (!np->is_leaf_)
+            np = np->child_[np->num_keys_];
+          int SizeDifference = p->keys_[position].second - np->keys_[np->num_keys_ - 1].second;
+          std::swap(p->keys_[position], np->keys_[np->num_keys_ - 1]);
+          while (np != p) {
+            np->size_ += SizeDifference;
+            np = np->parent_;
+          }
+
+          p = p->child_[position];
+        } else if (p->child_[position + 1]->num_keys_ > D - 1) {
+          // Use successor as replacement.
+          Node* np = p->child_[position + 1];
+          while (!np->is_leaf_)
+            np = np->child_[0];
+          int SizeDifference = p->keys_[position].second - np->keys_[0].second;
+          std::swap(p->keys_[position], np->keys_[0]);
+          while (np != p) {
+            np->size_ += SizeDifference;
+            np = np->parent_;
+          }
+
+          p = p->child_[position + 1];
+        } else {
+          // Merge.
+          Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
+          p->child_[position] = np;
+          np->parent_ = p;
+          LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
+          --p->num_keys_;
+
+          if (root_->num_keys_ == 0) {
+            root_ = p->child_[position];
+            root_->parent_ = nullptr;
+          }
+
+          p = p->child_[position];
+        }
       } else {
+        if (p->is_leaf_) {
+          // value does not exist, do nothing.
+          break;
+        }
+
         if (p->child_[position]->num_keys_ > D - 1) {
           // Safe to make deletion.
-          Delete(p->child_[position], value);
-        } else {
-          // Need borrow or merge.
+          p = p->child_[position];
+          continue;
+        }
 
-          if (position > 0 && p->child_[position - 1]->num_keys_ > D - 1) {
-            // Borrow one key from previous child, like right rotate.
-            // That is, use the largest value inside the previous child as key,
-            // and then insert the old key to itself. (Note that it is largest value inside node,
-            // not subtree).
-            Node* np = p->child_[position - 1];
-            ElementType new_key = np->keys_[np->num_keys_ - 1];
-            Node* rightmost_child = np->child_[np->num_keys_];
-            --np->num_keys_;
+        // Need borrow or merge.
+        if (position > 0 && p->child_[position - 1]->num_keys_ > D - 1) {
+          // Borrow one key from previous child, like right rotate.
+          // That is, use the largest value inside the previous child as key,
+          // and then insert the old key to itself. (Note that it is largest value inside node,
+          // not subtree).
+          Node* np = p->child_[position - 1];
+          ElementType new_key = np->keys_[np->num_keys_ - 1];
+          Node* rightmost_child = np->is_leaf_ ? nullptr : np->child_[np->num_keys_];
+          --np->num_keys_;
+          np->size_ -= new_key.second + GetSize(rightmost_child);
 
-            std::swap(p->keys_[position - 1], new_key);
+          std::swap(p->keys_[position - 1], new_key);
 
-            RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
-            if (!np->is_leaf_)
-              RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
-            p->child_[position]->keys_[0] = new_key;
-            if (!np->is_leaf_) {
-              p->child_[position]->child_[0] = rightmost_child;
-              rightmost_child->parent_ = p->child_[position];
-            }
-            ++p->child_[position]->num_keys_;
-
-            np->MaintainSize();
-            p->child_[position]->MaintainSize();
-
-            Delete(p->child_[position], value);
-          } else if (position < p->num_keys_ && p->child_[position + 1]->num_keys_ > D - 1) {
-            // Borrow one key from next child, like left rotate.
-            // That is, use the smallest value inside the next child as key, and
-            // then insert the old key to itself. (Note that it is smallest value inside node, not
-            // subtree).
-            Node* np = p->child_[position + 1];
-            ElementType new_key = np->keys_[0];
-            Node* leftmost_child = np->child_[0];
-            LeftShiftByOne(np->keys_, 1, np->num_keys_);
-            if (!np->is_leaf_)
-              LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
-            --np->num_keys_;
-
-            std::swap(p->keys_[position], new_key);
-
-            p->child_[position]->keys_[p->child_[position]->num_keys_] = new_key;
-            if (!np->is_leaf_) {
-              p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
-              leftmost_child->parent_ = p->child_[position];
-            }
-            ++p->child_[position]->num_keys_;
-
-            np->MaintainSize();
-            p->child_[position]->MaintainSize();
-
-            Delete(p->child_[position], value);
-          } else {
-            // Merge any of nearby child. For convinence, assume that the
-            // previous has higher priority for merge.
-            position = position == 0 ? position : position - 1;
-            Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
-            LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
-            p->child_[position] = np;
-            np->parent_ = p;
-            LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
-            --p->num_keys_;
-
-            if (root_->num_keys_ == 0) {
-              root_ = p->child_[position];
-              root_->parent_ = nullptr;
-            }
-
-            Delete(p->child_[position], value);
+          RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
+          if (!np->is_leaf_)
+            RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
+          p->child_[position]->keys_[0] = new_key;
+          p->child_[position]->size_ += new_key.second;
+          if (rightmost_child) {
+            p->child_[position]->child_[0] = rightmost_child;
+            rightmost_child->parent_ = p->child_[position];
+            p->child_[position]->size_ += GetSize(rightmost_child);
           }
+          ++p->child_[position]->num_keys_;
+
+          p = p->child_[position];
+        } else if (position < p->num_keys_ && p->child_[position + 1]->num_keys_ > D - 1) {
+          // Borrow one key from next child, like left rotate.
+          // That is, use the smallest value inside the next child as key, and
+          // then insert the old key to itself. (Note that it is smallest value inside node, not
+          // subtree).
+          Node* np = p->child_[position + 1];
+          ElementType new_key = np->keys_[0];
+          Node* leftmost_child = np->is_leaf_ ? nullptr : np->child_[0];
+          LeftShiftByOne(np->keys_, 1, np->num_keys_);
+          if (!np->is_leaf_)
+            LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
+          --np->num_keys_;
+          np->size_ -= new_key.second + GetSize(leftmost_child);
+
+          std::swap(p->keys_[position], new_key);
+
+          p->child_[position]->keys_[p->child_[position]->num_keys_] = new_key;
+          p->child_[position]->size_ += new_key.second;
+          if (leftmost_child) {
+            p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
+            leftmost_child->parent_ = p->child_[position];
+            p->child_[position]->size_ += GetSize(leftmost_child);
+          }
+          ++p->child_[position]->num_keys_;
+
+          p = p->child_[position];
+        } else {
+          // Merge any of nearby child. For convinence, assume that the
+          // previous has higher priority for merge.
+          position = position == 0 ? position : position - 1;
+          Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
+          p->child_[position] = np;
+          np->parent_ = p;
+          LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
+          --p->num_keys_;
+
+          if (root_->num_keys_ == 0) {
+            root_ = p->child_[position];
+            root_->parent_ = nullptr;
+          }
+
+          p = p->child_[position];
         }
       }
     }
-
-    p->MaintainSize();
   }
 
  public:
@@ -537,7 +547,7 @@ class BTree {
   void Delete(const ValueType& value) {
     if (root_ == nullptr)
       return;
-    Delete(root_, value);
+    DeleteInternal(value);
     if (root_->num_keys_ == 0) {
       freep(root_);
     }
@@ -686,7 +696,7 @@ void solve_case(int Case) {
   int n, q;
   std::cin >> n >> q;
 
-  BTree<int, 7> t;
+  BTree<int, 9> t;
   for (int i = 1, x; i <= n; ++i) {
     std::cin >> x;
     t.Insert(x);
