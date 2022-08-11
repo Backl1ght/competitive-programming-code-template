@@ -32,6 +32,27 @@ int main() {
   return 0;
 }
 
+namespace GTI {
+inline char gc(void) {
+  const int S = 1 << 16;
+  static char buf[S], *s = buf, *t = buf;
+  if (s == t)
+    t = buf + fread(s = buf, 1, S, stdin);
+  if (s == t)
+    return EOF;
+  return *s++;
+}
+inline int gti(void) {
+  int a = 0, b = 1, c = gc();
+  for (; !isdigit(c); c = gc())
+    b ^= (c == '-');
+  for (; isdigit(c); c = gc())
+    a = a * 10 + c - '0';
+  return b ? a : -a;
+}
+}  // namespace GTI
+using GTI::gti;
+
 /**
  * Implementation of B-Tree whose order is 2D - 1.
  *
@@ -172,17 +193,30 @@ class BTree {
    * in p->keys_). Otherwise return (false, index of child which value belong
    * to).
    */
-  std::pair<bool, int> GetPosition(Node* p, const ValueType& value) {
-    if (p->num_keys_ == 0)
-      return std::make_pair(false, 0);
+  inline std::pair<bool, int> GetPosition(Node* p, const ValueType& value) {
+    for (int i = 0; i < p->num_keys_; ++i) {
+      if (value < p->keys_[i].first) {
+        return std::make_pair(false, i);
+      }
+      if (value == p->keys_[i].first) {
+        return std::make_pair(true, i);
+      }
+    }
 
-    int position = std::lower_bound(p->keys_, p->keys_ + p->num_keys_, value,
-                                    [](const ElementType& element, const ValueType& value) {
-                                      return element.first < value;
-                                    }) -
-                   p->keys_;
-    bool value_exist = (position < p->num_keys_ && value == p->keys_[position].first);
-    return std::make_pair(value_exist, position);
+    return std::make_pair(false, p->num_keys_);
+
+    /*
+        if (p->num_keys_ == 0)
+          return std::make_pair(false, 0);
+
+        int position = std::lower_bound(p->keys_, p->keys_ + p->num_keys_, value,
+                                        [](const ElementType& element, const ValueType& value) {
+                                          return element.first < value;
+                                        }) -
+                       p->keys_;
+        bool value_exist = (position < p->num_keys_ && value == p->keys_[position].first);
+        return std::make_pair(value_exist, position);
+    */
   }
 
   /**
@@ -693,18 +727,18 @@ class BTree {
 };
 
 void solve_case(int Case) {
-  int n, q;
-  std::cin >> n >> q;
+  int n = gti(), q = gti();
 
-  BTree<int, 9> t;
+  BTree<int, 12> t;
   for (int i = 1, x; i <= n; ++i) {
-    std::cin >> x;
+    x = gti();
     t.Insert(x);
   }
 
   int ans = 0;
   for (int i = 1, op, x, last = 0; i <= q; ++i) {
-    std::cin >> op >> x;
+    op = gti();
+    x = gti();
     x ^= last;
     switch (op) {
       case 1:
@@ -731,5 +765,5 @@ void solve_case(int Case) {
         break;
     }
   }
-  std::cout << ans << "\n";
+  printf("%d\n", ans);
 }
