@@ -18,6 +18,9 @@ int qp(int x, int y) {
   }
   return r;
 }
+int inv(int x) {
+  return qp(x, MOD - 2);
+}
 int dvd(int x, int y) {
-  return 1ll * x * qp(y, MOD - 2) % MOD;
+  return mul(x, inv(y));
 }
