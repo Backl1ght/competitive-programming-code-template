@@ -230,7 +230,9 @@ class BTree {
     assert(p->num_keys_ == 2 * D - 1);
 
     ElementType key = p->keys_[D - 1];
-    Node* l = CreateNode();
+    p->size_ -= key.second;
+
+    Node* l = p;
     Node* r = CreateNode();
 
     // TODO: Set parent of l and r to p->parent_ maybe better.
@@ -238,25 +240,20 @@ class BTree {
 
     l->num_keys_ = r->num_keys_ = D - 1;
     for (int i = 0; i < D - 1; ++i) {
-      l->keys_[i] = p->keys_[i];
       r->keys_[i] = p->keys_[D + i];
+      p->size_ -= r->keys_[i].second;
+      r->size_ += r->keys_[i].second;
     }
     if (!p->is_leaf_) {
       for (int i = 0; i < D; ++i) {
-        l->child_[i] = p->child_[i];
-        l->child_[i]->parent_ = l;
         r->child_[i] = p->child_[D + i];
         r->child_[i]->parent_ = r;
+        p->size_ -= GetSize(r->child_[i]);
+        r->size_ += GetSize(r->child_[i]);
       }
     }
 
-    l->is_leaf_ = r->is_leaf_ = p->is_leaf_;
-
-    l->MaintainSize();
-    r->MaintainSize();
-
-    p->num_keys_ = -1;
-    freep(p);
+    r->is_leaf_ = p->is_leaf_;
 
     return std::make_tuple(key, l, r);
   }
@@ -327,34 +324,27 @@ class BTree {
     assert(b != nullptr);
     assert(a->num_keys_ == D - 1);
 
-    Node* p = CreateNode();
+    Node* p = a;
     {
       p->parent_ = nullptr;
 
       p->num_keys_ = 2 * D - 1;
       p->keys_[D - 1] = key;
+      p->size_ += key.second;
       for (int i = 0; i < D - 1; ++i) {
-        p->keys_[i] = a->keys_[i];
         p->keys_[D + i] = b->keys_[i];
+        p->size_ += b->keys_[i].second;
       }
 
       if (!a->is_leaf_) {
         for (int i = 0; i < D; ++i) {
-          p->child_[i] = a->child_[i];
           p->child_[D + i] = b->child_[i];
-        }
-        for (int i = 0; i < 2 * D; ++i) {
-          p->child_[i]->parent_ = p;
+          b->child_[i]->parent_ = p;
+          p->size_ += GetSize(b->child_[i]);
         }
       }
-
-      p->is_leaf_ = a->is_leaf_;
-
-      p->MaintainSize();
     }
 
-    a->num_keys_ = -1;
-    freep(a);
     b->num_keys_ = -1;
     freep(b);
 
