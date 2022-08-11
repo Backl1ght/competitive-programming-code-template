@@ -167,7 +167,7 @@ class BTree {
 
  private:
   /**
-   * Right shift a suffix of array.
+   * Right shift a suffix of array. That is, arr[begin; end) -> arr[begin + 1; end + 1).
    */
   template <typename T>
   void RightShiftByOne(T* arr, int begin, int end) {
@@ -177,7 +177,7 @@ class BTree {
   }
 
   /**
-   * Right shift a suffix of array.
+   * Right shift a suffix of array. That is, arr[begin; end) -> arr[begin - 1; end - 1).
    */
   template <typename T>
   void LeftShiftByOne(T* arr, int begin, int end) {
@@ -224,6 +224,8 @@ class BTree {
    *
    * - The number of keys in node p should be 2 * D - 1.
    * - The number of keys in node l and node r would be D - 1.
+   *
+   * TODO: Set parent of l and r to p->parent_ maybe better.
    */
   std::tuple<ElementType, Node*, Node*> Split(Node* p) {
     assert(p != nullptr);
@@ -233,27 +235,31 @@ class BTree {
     p->size_ -= key.second;
 
     Node* l = p;
+    {
+      l->parent_ = nullptr;
+      l->num_keys_ = D - 1;
+    }
+
     Node* r = CreateNode();
-
-    // TODO: Set parent of l and r to p->parent_ maybe better.
-    l->parent_ = r->parent_ = nullptr;
-
-    l->num_keys_ = r->num_keys_ = D - 1;
-    for (int i = 0; i < D - 1; ++i) {
-      r->keys_[i] = p->keys_[D + i];
-      p->size_ -= r->keys_[i].second;
-      r->size_ += r->keys_[i].second;
-    }
-    if (!p->is_leaf_) {
-      for (int i = 0; i < D; ++i) {
-        r->child_[i] = p->child_[D + i];
-        r->child_[i]->parent_ = r;
-        p->size_ -= GetSize(r->child_[i]);
-        r->size_ += GetSize(r->child_[i]);
+    {
+      r->parent_ = nullptr;
+      r->num_keys_ = D - 1;
+      for (int i = 0; i < D - 1; ++i) {
+        r->keys_[i] = p->keys_[D + i];
+        p->size_ -= r->keys_[i].second;
+        r->size_ += r->keys_[i].second;
       }
-    }
+      if (!p->is_leaf_) {
+        for (int i = 0; i < D; ++i) {
+          r->child_[i] = p->child_[D + i];
+          r->child_[i]->parent_ = r;
+          p->size_ -= GetSize(r->child_[i]);
+          r->size_ += GetSize(r->child_[i]);
+        }
+      }
 
-    r->is_leaf_ = p->is_leaf_;
+      r->is_leaf_ = p->is_leaf_;
+    }
 
     return std::make_tuple(key, l, r);
   }
@@ -331,12 +337,13 @@ class BTree {
       p->num_keys_ = 2 * D - 1;
       p->keys_[D - 1] = key;
       p->size_ += key.second;
+
       for (int i = 0; i < D - 1; ++i) {
         p->keys_[D + i] = b->keys_[i];
         p->size_ += b->keys_[i].second;
       }
 
-      if (!a->is_leaf_) {
+      if (!b->is_leaf_) {
         for (int i = 0; i < D; ++i) {
           p->child_[D + i] = b->child_[i];
           b->child_[i]->parent_ = p;
@@ -345,7 +352,7 @@ class BTree {
       }
     }
 
-    b->num_keys_ = -1;
+    b->num_keys_ = 0;
     freep(b);
 
     return p;
@@ -433,6 +440,7 @@ class BTree {
           --p->num_keys_;
 
           if (root_->num_keys_ == 0) {
+            freep(root_);
             root_ = p->child_[position];
             root_->parent_ = nullptr;
           }
@@ -466,11 +474,10 @@ class BTree {
           std::swap(p->keys_[position - 1], new_key);
 
           RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
-          if (!np->is_leaf_)
-            RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
           p->child_[position]->keys_[0] = new_key;
           p->child_[position]->size_ += new_key.second;
           if (rightmost_child) {
+            RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
             p->child_[position]->child_[0] = rightmost_child;
             rightmost_child->parent_ = p->child_[position];
             p->child_[position]->size_ += GetSize(rightmost_child);
@@ -516,6 +523,7 @@ class BTree {
           --p->num_keys_;
 
           if (root_->num_keys_ == 0) {
+            freep(root_);
             root_ = p->child_[position];
             root_->parent_ = nullptr;
           }
