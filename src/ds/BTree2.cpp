@@ -41,6 +41,7 @@ int main() {
  * then finish the operation.
  *
  * TODO(backlight):
+ * - Insertion and Deletion can be done using non-recurse method.
  * - The maintainance of size of subtrees can be improved. It is
  * not necessary to re-calculate the size of subtrees each time.
  * - There are servaral memory copy operations, use apis like memcpy or memmove
@@ -236,44 +237,50 @@ class BTree {
    * If it is going to insert value to a full node, split the node first to
    * make enough room for the new value, and then make insertion.
    */
-  void InsertNonFull(Node* p, const ValueType& value) {
-    assert(p != nullptr);
+  void InsertNonFull(const ValueType& value) {
+    Node* p = root_;
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
 
-    auto [value_exist, position] = GetPosition(p, value);
+      if (value_exist) {
+        ++p->keys_[position].second;
+        break;
+      }
 
-    if (value_exist) {
-      ++p->keys_[position].second;
-    } else {
       if (p->is_leaf_) {
         RightShiftByOne(p->keys_, position, p->num_keys_);
         p->keys_[position] = std::make_pair(value, 1);
         ++p->num_keys_;
-      } else {
-        if (p->child_[position]->num_keys_ == 2 * D - 1) {
-          auto [new_key, l, r] = Split(p->child_[position]);
-          RightShiftByOne(p->keys_, position, p->num_keys_);
-          RightShiftByOne(p->child_, position + 1, p->num_keys_ + 1);
-          p->child_[position] = l;
-          p->keys_[position] = new_key;
-          p->child_[position + 1] = r;
-          ++p->num_keys_;
-          l->parent_ = r->parent_ = p;
+        break;
+      }
 
-          if (value == p->keys_[position].first) {
-            ++p->keys_[position].second;
-          } else if (value > p->keys_[position].first) {
-            ++position;
-            InsertNonFull(p->child_[position], value);
-          } else {
-            InsertNonFull(p->child_[position], value);
-          }
+      if (p->child_[position]->num_keys_ == 2 * D - 1) {
+        auto [new_key, l, r] = Split(p->child_[position]);
+        RightShiftByOne(p->keys_, position, p->num_keys_);
+        RightShiftByOne(p->child_, position + 1, p->num_keys_ + 1);
+        p->child_[position] = l;
+        p->keys_[position] = new_key;
+        p->child_[position + 1] = r;
+        ++p->num_keys_;
+        l->parent_ = r->parent_ = p;
+
+        if (value == p->keys_[position].first) {
+          ++p->keys_[position].second;
+          break;
+        } else if (value > p->keys_[position].first) {
+          p = p->child_[position + 1];
         } else {
-          InsertNonFull(p->child_[position], value);
+          p = p->child_[position];
         }
+      } else {
+        p = p->child_[position];
       }
     }
 
-    p->MaintainSize();
+    while (p != nullptr) {
+      ++p->size_;
+      p = p->parent_;
+    }
   }
 
   /**
@@ -524,7 +531,7 @@ class BTree {
       root_ = new_root;
     }
 
-    InsertNonFull(root_, value);
+    InsertNonFull(value);
   }
 
   void Delete(const ValueType& value) {
@@ -679,7 +686,7 @@ void solve_case(int Case) {
   int n, q;
   std::cin >> n >> q;
 
-  BTree<int, 5> t;
+  BTree<int, 7> t;
   for (int i = 1, x; i <= n; ++i) {
     std::cin >> x;
     t.Insert(x);
