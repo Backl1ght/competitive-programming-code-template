@@ -1,287 +1,735 @@
-template <typename K, int BF>
+// Problem: P6136 【模板】普通平衡树（数据加强版）
+// Contest: Luogu
+// URL: https://www.luogu.com.cn/problem/P6136
+// Memory Limit: 88 MB
+// Time Limit: 3000 ms
+//
+// Powered by CP Editor (https://cpeditor.org)
+
+#include <bits/stdc++.h>
+
+#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define freep(parent) parent ? delete parent, parent = nullptr, void(1) : void(0)
+
+#ifdef BACKLIGHT
+#include "debug.h"
+#else
+#define logd(...) ;
+#endif
+
+using i64 = int64_t;
+using u64 = uint64_t;
+
+void solve_case(int Case);
+
+int main() {
+  CPPIO;
+  int T = 1;
+  // std::cin >> T;
+  for (int t = 1; t <= T; ++t) {
+    solve_case(t);
+  }
+  return 0;
+}
+
+/**
+ * Implementation of B-Tree whose order is 2D - 1.
+ *
+ * Both insertion and deletion use the strategy that before making operation, if
+ * the operation may break the rules of b-tree, adjust the tree firstly so that
+ * further operation inside the tree will not break the rules of b-tree, and
+ * then finish the operation.
+ *
+ * TODO(backlight):
+ * - There are servaral memory copy operations, use apis like memcpy or memmove
+ * instead of native loop may be more effective.
+ * - Increase or decrease the height of tree only when needed maybe more
+ * effective.
+ */
+template <typename ValueType, int D>
 class BTree {
  public:
-  typedef std::pair<K, int> value_type;
+  using ElementType = std::pair<ValueType, int>;
 
  private:
+  /**
+   * Tree node of BTree, with layout looked like below:
+   *   keys :    | k0 |    | k1 |    | k2 |
+   *   child: c0 |    | c1 |    | c2 |    | c3
+   */
   struct Node {
-    value_type values[2 * BF - 1];
-    Node* child[2 * BF] = {nullptr};
-    Node* p = nullptr;
-    int keyNum = 0, size = 0;
-    bool isLeaf = true;
-    const K& key(int i) const { return values[i].first; }
-    int& cnt(int i) { return values[i].second; }
-    Node(Node* p = nullptr)
-        : p(p) {}
+    Node* parent_;
+
+    int num_keys_;
+    ElementType keys_[2 * D - 1];
+    Node* child_[2 * D];
+
+    bool is_leaf_;
+
+    int size_;
+
+    Node() {
+      parent_ = nullptr;
+
+      num_keys_ = 0;
+      for (int i = 0; i < 2 * D; ++i)
+        child_[i] = nullptr;
+
+      is_leaf_ = true;
+
+      size_ = 0;
+    }
+
+    ~Node() {
+      if (num_keys_ > 0) {
+        for (int i = 0; i <= num_keys_; ++i) {
+          freep(child_[i]);
+        }
+      }
+    }
+
+    void MaintainSize() {
+      size_ = 0;
+
+      if (num_keys_ > 0) {
+        for (int i = 0; i < num_keys_; ++i) {
+          assert(keys_[i].second > 0);
+          assert(i == 0 || (i > 0 && keys_[i - 1].first < keys_[i].first));
+        }
+        for (int i = 0; i < num_keys_; ++i)
+          size_ += keys_[i].second;
+        for (int i = 0; i <= num_keys_; ++i)
+          size_ += GetSize(child_[i]);
+      }
+    }
+
+    std::string to_string() {
+      std::stringstream ss;
+
+      ss << "  Node " << (void*)(this) << " [\n";
+
+      ss << "    SIZE: " << size_ << ",\n";
+      ss << "    TYPE: " << (is_leaf_ ? "leaf" : "internal") << ",\n";
+
+      ss << "    NUM_KEYS: " << num_keys_ << ",\n";
+      ss << "    KEY: [";
+      for (int i = 0; i < num_keys_; ++i) {
+        ss << "(" << keys_[i].first << "," << keys_[i].second << "),";
+      }
+      ss << "],\n";
+
+      ss << "    CHILD: [";
+      for (int i = 0; i <= num_keys_; ++i) {
+        ss << (void*)(child_[i]) << ",";
+      }
+      ss << "]\n";
+
+      ss << "  ],\n";
+
+      return ss.str();
+    }
   };
-  Node* root = nullptr;
-  static bool pairComp(const value_type& lhs, const K& rhs) { return lhs.first < rhs; }
+
+  inline static int GetSize(Node* p) {
+    if (p == nullptr)
+      return 0;
+    return p->size_;
+  }
+
+  /**
+   * Create a new node.
+   *
+   * In case of disgusting problem with strict time limit, it could easily adapt to stategy that
+   * pre-allocate a large buffer as a pool to reduce time cost on memory allocation.
+   */
+  inline Node* CreateNode() { return new Node(); }
+
+ private:
+  /**
+   * Right shift a suffix of array.
+   */
   template <typename T>
-  static void shiftBy(T* ptr, int length, int shift) { memmove(ptr + shift, ptr, length * sizeof(T)); }
-  static int calcSize(Node* x) {
-    if (!x)
-      return 0;
-    int nsz = 0;
-    for (int i = 0; i < x->keyNum; ++i)
-      nsz += getSize(x->child[i]) + x->cnt(i);
-    nsz += getSize(x->child[x->keyNum]);
-    return nsz;
-  }
-  static int getSize(Node* x) {
-    if (!x)
-      return 0;
-    return x->size;
-  }
-  //把where孩子分成两个节点，都作为x的孩子
-  void split(Node* x, int where) {
-    Node* z = new Node(x);
-    Node* y = x->child[where];
-    z->isLeaf = y->isLeaf;
-    memmove(z->values, y->values + BF, (BF - 1) * sizeof(value_type));
-    if (!y->isLeaf) {
-      memmove(z->child, y->child + BF, BF * sizeof(Node*));
-      for (int i = 0; i < BF; ++i)
-        z->child[i]->p = z;
+  void RightShiftByOne(T* arr, int begin, int end) {
+    for (int i = end; i >= begin + 1; --i) {
+      arr[i] = arr[i - 1];
     }
-    z->keyNum = y->keyNum = BF - 1;
-    shiftBy(x->child + where + 1, x->keyNum - where, 1);  //注意child本身keyNum多一个
-    x->child[where + 1] = z;
-    shiftBy(x->values + where, x->keyNum - where, 1);
-    new (x->values + where) value_type(y->values[BF - 1]);
-
-    y->size = calcSize(y), z->size = calcSize(z);
-    ++x->keyNum;
   }
-  void insertEmpty(Node* x, const K& key) {
-    while (true) {
-      int i = lower_bound(x->values, x->values + x->keyNum, key, pairComp) - x->values;
-      if (i != x->keyNum && !(key < x->values[i].first))  //重复插入
-      {
-        ++x->cnt(i);
-        while (x)
-          ++x->size, x = x->p;
-        return;
+
+  /**
+   * Right shift a suffix of array.
+   */
+  template <typename T>
+  void LeftShiftByOne(T* arr, int begin, int end) {
+    for (int i = begin - 1; i < end; ++i) {
+      arr[i] = arr[i + 1];
+    }
+  }
+
+  /**
+   * Get position of value in node p.
+   *
+   * @return If value exist as a key of node p, then return (true, index of key
+   * in p->keys_). Otherwise return (false, index of child which value belong
+   * to).
+   */
+  std::pair<bool, int> GetPosition(Node* p, const ValueType& value) {
+    if (p->num_keys_ == 0)
+      return std::make_pair(false, 0);
+
+    int position = std::lower_bound(p->keys_, p->keys_ + p->num_keys_, value,
+                                    [](const ElementType& element, const ValueType& value) {
+                                      return element.first < value;
+                                    }) -
+                   p->keys_;
+    bool value_exist = (position < p->num_keys_ && value == p->keys_[position].first);
+    return std::make_pair(value_exist, position);
+  }
+
+  /**
+   * Split p into two nodes and a single key.
+   *
+   * - The number of keys in node p should be 2 * D - 1.
+   * - The number of keys in node l and node r would be D - 1.
+   */
+  std::tuple<ElementType, Node*, Node*> Split(Node* p) {
+    assert(p != nullptr);
+    assert(p->num_keys_ == 2 * D - 1);
+
+    ElementType key = p->keys_[D - 1];
+    Node* l = CreateNode();
+    Node* r = CreateNode();
+
+    // TODO: Set parent of l and r to p->parent_ maybe better.
+    l->parent_ = r->parent_ = nullptr;
+
+    l->num_keys_ = r->num_keys_ = D - 1;
+    for (int i = 0; i < D - 1; ++i) {
+      l->keys_[i] = p->keys_[i];
+      r->keys_[i] = p->keys_[D + i];
+    }
+    if (!p->is_leaf_) {
+      for (int i = 0; i < D; ++i) {
+        l->child_[i] = p->child_[i];
+        l->child_[i]->parent_ = l;
+        r->child_[i] = p->child_[D + i];
+        r->child_[i]->parent_ = r;
       }
-      if (x->isLeaf) {
-        shiftBy(x->values + i, x->keyNum - i, 1);
-        x->values[i] = {key, 1};
-        ++x->keyNum;
-        while (x)
-          ++x->size, x = x->p;
-        return;
+    }
+
+    l->is_leaf_ = r->is_leaf_ = p->is_leaf_;
+
+    l->MaintainSize();
+    r->MaintainSize();
+
+    p->num_keys_ = -1;
+    freep(p);
+
+    return std::make_tuple(key, l, r);
+  }
+
+  /**
+   * Insert value to tree p recursively. Node p will has enough room for the new
+   * value based on the insertion strategy.
+   *
+   * If it is going to insert value to a full node, split the node first to
+   * make enough room for the new value, and then make insertion.
+   */
+  void InsertNonFull(const ValueType& value) {
+    Node* p = root_;
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
+
+      if (value_exist) {
+        ++p->keys_[position].second;
+        break;
       }
-      if (x->child[i]->keyNum == 2 * BF - 1) {
-        split(x, i);
-        if (x->key(i) < key)
-          ++i;
-        else if (!(key < x->key(i))) {
-          ++x->cnt(i);
-          while (x)
-            ++x->size, x = x->p;
-          return;
+
+      if (p->is_leaf_) {
+        RightShiftByOne(p->keys_, position, p->num_keys_);
+        p->keys_[position] = std::make_pair(value, 1);
+        ++p->num_keys_;
+        break;
+      }
+
+      if (p->child_[position]->num_keys_ == 2 * D - 1) {
+        auto [new_key, l, r] = Split(p->child_[position]);
+        RightShiftByOne(p->keys_, position, p->num_keys_);
+        RightShiftByOne(p->child_, position + 1, p->num_keys_ + 1);
+        p->child_[position] = l;
+        p->keys_[position] = new_key;
+        p->child_[position + 1] = r;
+        ++p->num_keys_;
+        l->parent_ = r->parent_ = p;
+
+        if (value == p->keys_[position].first) {
+          ++p->keys_[position].second;
+          break;
+        } else if (value > p->keys_[position].first) {
+          p = p->child_[position + 1];
+        } else {
+          p = p->child_[position];
         }
-      }
-      x = x->child[i];
-    }
-  }
-
-  void merge(Node* x, int i)  //将x的i孩子与i+1孩子合并，用x的i键作为分隔，这两个孩子都只有BF-1个孩子，合并后有2*BF-1个
-  {
-    Node *y = x->child[i], *z = x->child[i + 1];
-    y->keyNum = 2 * BF - 1;
-    y->values[BF - 1] = std::move(x->values[i]);
-    memmove(y->values + BF, z->values, (BF - 1) * sizeof(value_type));
-    if (!y->isLeaf) {
-      memmove(y->child + BF, z->child, BF * sizeof(Node*));
-      for (int j = BF; j <= 2 * BF - 1; ++j)
-        y->child[j]->p = y;
-    }
-    shiftBy(x->values + i + 1, x->keyNum - i - 1, -1);
-    shiftBy(x->child + i + 2, x->keyNum - i - 1, -1);
-
-    --x->keyNum;
-    y->size = calcSize(y);
-  }
-  void erase(Node* x, const K& key) {
-    int i = lower_bound(x->values, x->values + x->keyNum, key, pairComp) - x->values;
-    if (i != x->keyNum && !(key < x->values[i].first))  //找到key了
-    {
-      if (x->cnt(i) > 1) {
-        --x->cnt(i);
-        while (x)
-          --x->size, x = x->p;
-        return;
-      }
-      if (x->isLeaf)  //x是叶节点，直接删除
-      {
-        shiftBy(x->values + i + 1, --x->keyNum - i, -1);  //需要移动的内存是x->keyNum-i-1
-        while (x)
-          --x->size, x = x->p;
       } else {
-        if (x->child[i]->keyNum >= BF)  //前驱所在孩子有足够的孩子(以应对它的孩子的需求)
-        {
-          Node* y = x->child[i];
-          while (!y->isLeaf)
-            y = y->child[y->keyNum];  //找前驱
-          x->values[i] = y->values[y->keyNum - 1];
-          if (x->cnt(i) != 1)  //y的对应节点cnt有多个，那么沿路减size;只有一个的话删除的时候会处理
-          {
-            y->cnt(y->keyNum - 1) = 1;
-            while (y != x)
-              y->size -= x->cnt(i) - 1, y = y->p;
-          }
+        p = p->child_[position];
+      }
+    }
 
-          erase(x->child[i], x->key(i));
-        } else if (x->child[i + 1]->keyNum >= BF)  //后继所在孩子有足够的孩子
-        {
-          Node* y = x->child[i + 1];
-          while (!y->isLeaf)
-            y = y->child[0];  //找后继
-          x->values[i] = y->values[0];
-          if (x->cnt(i) != 1) {
-            y->cnt(0) = 1;
-            while (y != x)
-              y->size -= x->cnt(i) - 1, y = y->p;
-          }
+    while (p != nullptr) {
+      ++p->size_;
+      p = p->parent_;
+    }
+  }
 
-          erase(x->child[i + 1], x->key(i));
-        } else  //都没有,那么把这两个节点都合并到y中，并且挪动x的孩子和键
-        {
-          merge(x, i);
-          if (root->keyNum == 0)  //keyNum==0只是没有键了，但是还可能有一个孩子，这时根变成这个孩子
-            root = x->child[i], root->p = nullptr;
-          erase(x->child[i], key);
+  /**
+   * Merge two nodes with D - 1 keys and a single key into one nodes with 2D - 1
+   * keys.
+   *
+   * - The size of node a and node b should be D - 1.
+   * - Keys in a should be smaller than keys in b.
+   */
+  Node* Merge(const ElementType& key, Node* a, Node* b) {
+    assert(a != nullptr);
+    assert(a->num_keys_ == D - 1);
+    assert(b != nullptr);
+    assert(a->num_keys_ == D - 1);
+
+    Node* p = CreateNode();
+    {
+      p->parent_ = nullptr;
+
+      p->num_keys_ = 2 * D - 1;
+      p->keys_[D - 1] = key;
+      for (int i = 0; i < D - 1; ++i) {
+        p->keys_[i] = a->keys_[i];
+        p->keys_[D + i] = b->keys_[i];
+      }
+
+      if (!a->is_leaf_) {
+        for (int i = 0; i < D; ++i) {
+          p->child_[i] = a->child_[i];
+          p->child_[D + i] = b->child_[i];
+        }
+        for (int i = 0; i < 2 * D; ++i) {
+          p->child_[i]->parent_ = p;
         }
       }
-    } else if (!x->isLeaf)  //没有找到key,只要保证x->child[i]->keyNum足够多即可无脑递归，然而很难保证
-    {
-      if (x->child[i]->keyNum == BF - 1) {
-        Node* y = x->child[i];
-        if (i >= 1 && x->child[i - 1]->keyNum >= BF)  //左兄弟，取走它的最大孩子
-        {
-          //找相邻的兄弟借节点，类似旋转操作,把x的一个键移入要删的key所在孩子，把它的兄弟的一个key和孩子移入x
-          //但是从左还是右借并不完全一样，所以不能一概处理
-          Node* z = x->child[i - 1];
-          shiftBy(y->values, y->keyNum, 1);
-          //是否需要考虑析构的问题？z的keyNum已经减了，不可能再去析构z->values[z->keyNum - 1]了
-          //所以，value的构造必须要用new不能用=，从而避开=的资源释放
-          //但是value的移动似乎应该是bitwise的，考虑std::move
-          new (y->values) value_type(std::move(x->values[i - 1]));
-          new (x->values + i - 1) value_type(std::move(z->values[z->keyNum - 1]));
-          if (!y->isLeaf) {
-            shiftBy(y->child, y->keyNum + 1, 1);
-            y->child[0] = z->child[z->keyNum], y->child[0]->p = y;
-          }
 
-          --z->keyNum, ++y->keyNum;
-          y->size = calcSize(y), z->size = calcSize(z);
-          erase(y, key);
-        } else if (i < x->keyNum && x->child[i + 1]->keyNum >= BF)  //右兄弟,取走它的最小孩子
-        {
-          Node* z = x->child[i + 1];
-          new (y->values + y->keyNum) value_type(std::move(x->values[i]));
-          new (x->values + i) value_type(std::move(z->values[0]));
-          if (!y->isLeaf)  //y和z深度一样，isLeaf情况相同
-          {
-            y->child[y->keyNum + 1] = z->child[0], y->child[y->keyNum + 1]->p = y;
-            shiftBy(z->child + 1, z->keyNum, -1);
-          }
-          shiftBy(z->values + 1, z->keyNum - 1, -1);
+      p->is_leaf_ = a->is_leaf_;
 
-          --z->keyNum, ++y->keyNum;
-          y->size = calcSize(y), z->size = calcSize(z);
-          erase(y, key);
-        } else  //两个兄弟都没有节点借,那么将它与随便左右哪个兄弟合并，然而还是要特判一下
-        {
-          if (i != 0)
-            --i;  //i==0时，y与y+1合并仍放于y；否则y与y-1合并放于y-1
-          y = x->child[i];
-          merge(x, i);
-          if (root->keyNum == 0)
-            root = y, root->p = nullptr;
-          erase(y, key);
+      p->MaintainSize();
+    }
+
+    a->num_keys_ = -1;
+    freep(a);
+    b->num_keys_ = -1;
+    freep(b);
+
+    return p;
+  }
+
+  /**
+   * Delete value from tree p recursively. Delete keys in p will not break the
+   * rules based on the deletion strategy.
+   *
+   * If it is going to delete value from node with D - 1 keys, borrow one node
+   * from brother or merge two nodes to ensure that deletion will not break the
+   * rules, and then make deletion.
+   */
+  void DeleteInternal(const ValueType& value) {
+    Node* p = root_;
+
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
+
+      if (value_exist) {
+        if (p->keys_[position].second > 1) {
+          --p->keys_[position].second;
+          while (p != nullptr) {
+            --p->size_;
+            p = p->parent_;
+          }
+          break;
         }
-      } else
-        erase(x->child[i], key);
+
+        if (p->is_leaf_) {
+          // Node p is a leaf, and based on the deletion strategy, it is safe to
+          // delete the key directly.
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
+          --p->num_keys_;
+          while (p != nullptr) {
+            --p->size_;
+            p = p->parent_;
+          }
+          break;
+        }
+
+        // Need borrow or merge.
+        //
+        // If the previous child or the next child has enough node, just
+        // borrow one key from it, that is, like deletion in BST, find a
+        // replacement(pioneer or succssor) and replace, and then delete
+        // recursively.
+        //
+        // Otherwise merge these two nodes and the key to be
+        // deleted into one node. Now it is safe to delete key in the new
+        // node.
+        if (p->child_[position]->num_keys_ > D - 1) {
+          // Use pioneer as replacement.
+          Node* np = p->child_[position];
+          while (!np->is_leaf_)
+            np = np->child_[np->num_keys_];
+          int SizeDifference = p->keys_[position].second - np->keys_[np->num_keys_ - 1].second;
+          std::swap(p->keys_[position], np->keys_[np->num_keys_ - 1]);
+          while (np != p) {
+            np->size_ += SizeDifference;
+            np = np->parent_;
+          }
+
+          p = p->child_[position];
+        } else if (p->child_[position + 1]->num_keys_ > D - 1) {
+          // Use successor as replacement.
+          Node* np = p->child_[position + 1];
+          while (!np->is_leaf_)
+            np = np->child_[0];
+          int SizeDifference = p->keys_[position].second - np->keys_[0].second;
+          std::swap(p->keys_[position], np->keys_[0]);
+          while (np != p) {
+            np->size_ += SizeDifference;
+            np = np->parent_;
+          }
+
+          p = p->child_[position + 1];
+        } else {
+          // Merge.
+          Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
+          p->child_[position] = np;
+          np->parent_ = p;
+          LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
+          --p->num_keys_;
+
+          if (root_->num_keys_ == 0) {
+            root_ = p->child_[position];
+            root_->parent_ = nullptr;
+          }
+
+          p = p->child_[position];
+        }
+      } else {
+        if (p->is_leaf_) {
+          // value does not exist, do nothing.
+          break;
+        }
+
+        if (p->child_[position]->num_keys_ > D - 1) {
+          // Safe to make deletion.
+          p = p->child_[position];
+          continue;
+        }
+
+        // Need borrow or merge.
+        if (position > 0 && p->child_[position - 1]->num_keys_ > D - 1) {
+          // Borrow one key from previous child, like right rotate.
+          // That is, use the largest value inside the previous child as key,
+          // and then insert the old key to itself. (Note that it is largest value inside node,
+          // not subtree).
+          Node* np = p->child_[position - 1];
+          ElementType new_key = np->keys_[np->num_keys_ - 1];
+          Node* rightmost_child = np->is_leaf_ ? nullptr : np->child_[np->num_keys_];
+          --np->num_keys_;
+          np->size_ -= new_key.second + GetSize(rightmost_child);
+
+          std::swap(p->keys_[position - 1], new_key);
+
+          RightShiftByOne(p->child_[position]->keys_, 0, p->child_[position]->num_keys_);
+          if (!np->is_leaf_)
+            RightShiftByOne(p->child_[position]->child_, 0, p->child_[position]->num_keys_ + 1);
+          p->child_[position]->keys_[0] = new_key;
+          p->child_[position]->size_ += new_key.second;
+          if (rightmost_child) {
+            p->child_[position]->child_[0] = rightmost_child;
+            rightmost_child->parent_ = p->child_[position];
+            p->child_[position]->size_ += GetSize(rightmost_child);
+          }
+          ++p->child_[position]->num_keys_;
+
+          p = p->child_[position];
+        } else if (position < p->num_keys_ && p->child_[position + 1]->num_keys_ > D - 1) {
+          // Borrow one key from next child, like left rotate.
+          // That is, use the smallest value inside the next child as key, and
+          // then insert the old key to itself. (Note that it is smallest value inside node, not
+          // subtree).
+          Node* np = p->child_[position + 1];
+          ElementType new_key = np->keys_[0];
+          Node* leftmost_child = np->is_leaf_ ? nullptr : np->child_[0];
+          LeftShiftByOne(np->keys_, 1, np->num_keys_);
+          if (!np->is_leaf_)
+            LeftShiftByOne(np->child_, 1, np->num_keys_ + 1);
+          --np->num_keys_;
+          np->size_ -= new_key.second + GetSize(leftmost_child);
+
+          std::swap(p->keys_[position], new_key);
+
+          p->child_[position]->keys_[p->child_[position]->num_keys_] = new_key;
+          p->child_[position]->size_ += new_key.second;
+          if (leftmost_child) {
+            p->child_[position]->child_[p->child_[position]->num_keys_ + 1] = leftmost_child;
+            leftmost_child->parent_ = p->child_[position];
+            p->child_[position]->size_ += GetSize(leftmost_child);
+          }
+          ++p->child_[position]->num_keys_;
+
+          p = p->child_[position];
+        } else {
+          // Merge any of nearby child. For convinence, assume that the
+          // previous has higher priority for merge.
+          position = position == 0 ? position : position - 1;
+          Node* np = Merge(p->keys_[position], p->child_[position], p->child_[position + 1]);
+          LeftShiftByOne(p->keys_, position + 1, p->num_keys_);
+          p->child_[position] = np;
+          np->parent_ = p;
+          LeftShiftByOne(p->child_, position + 2, p->num_keys_ + 1);
+          --p->num_keys_;
+
+          if (root_->num_keys_ == 0) {
+            root_ = p->child_[position];
+            root_->parent_ = nullptr;
+          }
+
+          p = p->child_[position];
+        }
+      }
     }
   }
 
  public:
-  BTree()
-      : root(new Node) {}
-  void insert(const K& key) {
-    //沿路向下分裂满节点,每次分裂成左右一半，孩子的中间key留在父亲节点中用于分隔两个新孩子
-    //insertEmpty只保证了当前节点有空间(来容纳它的孩子的分裂)，不保证key需要去的孩子节点也有空间
-    if (root->keyNum == 2 * BF - 1) {
-      Node* x = new Node;
-      x->isLeaf = false, x->child[0] = root, x->size = root->size;  //+1操作由insertEmpty来做
-      root->p = x, root = x;
-      split(x, 0);  //split接受参数：node的满子节点下标
+  BTree() : root_(nullptr) {}
+
+  BTree(const BTree&) = delete;
+
+  BTree(BTree&&) = delete;
+
+  ~BTree() { freep(root_); }
+
+  void Insert(const ValueType& value) {
+    if (root_ == nullptr) {
+      root_ = CreateNode();
+      root_->parent_ = nullptr;
+      root_->num_keys_ = 1;
+      root_->keys_[0] = std::make_pair(value, 1);
+      root_->is_leaf_ = true;
+      root_->MaintainSize();
+      return;
     }
-    insertEmpty(root, key);
-  }
-  void erase(const K& key) { erase(root, key); }
-  int next(const K& key) {
-    Node* x = root;
-    int ret;
-    while (x) {
-      int i = lower_bound(x->values, x->values + x->keyNum, key, pairComp) - x->values;
-      if (x->values[i].first == key)
-        ++i;
-      if (i != x->keyNum)
-        ret = x->values[i].first;
-      x = x->child[i];
+
+    // If the root_ is full, this insertion may increase the height of
+    // tree. To avoid corner case, just increase the height of tree first.
+    if (root_->num_keys_ == 2 * D - 1) {
+      auto [new_key, l, r] = Split(root_);
+
+      Node* new_root = CreateNode();
+      new_root->parent_ = nullptr;
+      new_root->num_keys_ = 1;
+      new_root->keys_[0] = new_key;
+      new_root->child_[0] = l;
+      new_root->child_[1] = r;
+      new_root->is_leaf_ = false;
+      new_root->MaintainSize();
+
+      l->parent_ = r->parent_ = new_root;
+
+      root_ = new_root;
     }
-    return ret;
+
+    InsertNonFull(value);
   }
-  int prev(const K& key) {
-    Node* x = root;
-    int ret;
-    while (x) {
-      int i = lower_bound(x->values, x->values + x->keyNum, key, pairComp) - x->values;
-      if (i)
-        ret = x->values[i - 1].first;
-      x = x->child[i];
+
+  void Delete(const ValueType& value) {
+    if (root_ == nullptr)
+      return;
+    DeleteInternal(value);
+    if (root_->num_keys_ == 0) {
+      freep(root_);
     }
-    return ret;
   }
-  int rank(const K& key) {
-    Node* x = root;
-    int ret = 0;
-    while (x) {
-      if (x->key(x->keyNum - 1) < key) {
-        ret += x->size - getSize(x->child[x->keyNum]);
-        x = x->child[x->keyNum];
+
+  int GetRank(const ValueType& value) {
+    int rank = 0;
+
+    Node* p = root_;
+    while (p) {
+      assert(p->num_keys_ >= 1);
+
+      if (value > p->keys_[p->num_keys_ - 1].first) {
+        rank += GetSize(p) - GetSize(p->child_[p->num_keys_]);
+        p = p->child_[p->num_keys_];
         continue;
       }
-      for (int i = 0; i < x->keyNum; ++i) {
-        if (x->key(i) < key)
-          ret += getSize(x->child[i]) + x->cnt(i);
-        else if (x->key(i) == key)
-          return ret + getSize(x->child[i]) + 1;
-        else {
-          x = x->child[i];
+
+      for (int i = 0; i < p->num_keys_; ++i) {
+        if (value < p->keys_[i].first) {
+          p = p->child_[i];
           break;
+        } else {
+          rank += GetSize(p->child_[i]);
+        }
+
+        if (value == p->keys_[i].first) {
+          return rank + 1;
+        } else {
+          rank += p->keys_[i].second;
         }
       }
     }
-    return ret;
+
+    return rank + 1;
   }
-  int kth(int k) {
-    Node* x = root;
+
+  ValueType GetKth(int k) {
+    assert(k >= 1 && k <= GetSize(root_));
+
+    Node* p = root_;
     while (true) {
-      for (int i = 0; i <= x->keyNum; ++i) {
-        //const int csz = getSize(x->child[i]) + (i == x->keyNum ? 1 : x->cnt(i));
-        const int lb = getSize(x->child[i]) + 1, ub = getSize(x->child[i]) + (i == x->keyNum ? 1 : x->cnt(i));
-        if (k >= lb && k <= ub)
-          return x->key(i);
-        if (k < lb) {
-          x = x->child[i];
+      assert(p->num_keys_ >= 1);
+
+      if (k > GetSize(p) - GetSize(p->child_[p->num_keys_])) {
+        k -= GetSize(p) - GetSize(p->child_[p->num_keys_]);
+        p = p->child_[p->num_keys_];
+        continue;
+      }
+
+      for (int i = 0; i < p->num_keys_; ++i) {
+        if (k <= GetSize(p->child_[i])) {
+          assert(p->is_leaf_ == false);
+          p = p->child_[i];
           break;
+        } else {
+          k -= GetSize(p->child_[i]);
         }
-        k -= ub;
+
+        if (k <= p->keys_[i].second) {
+          return p->keys_[i].first;
+        } else {
+          k -= p->keys_[i].second;
+        }
       }
     }
+
+    assert(false);
   }
+
+  ValueType GetPrev(const ValueType& value) {
+    ValueType result;
+
+    Node* p = root_;
+    while (p) {
+      auto [_, position] = GetPosition(p, value);
+      if (position)
+        result = p->keys_[position - 1].first;
+      p = p->child_[position];
+    }
+
+    return result;
+  }
+
+  ValueType GetNext(const ValueType& value) {
+    ValueType result;
+
+    Node* p = root_;
+    while (p) {
+      auto [value_exist, position] = GetPosition(p, value);
+      if (value_exist)
+        ++position;
+      if (position < p->num_keys_)
+        result = p->keys_[position].first;
+      p = p->child_[position];
+    }
+
+    return result;
+  }
+
+  std::string to_string(Node* p) const {
+    std::stringstream ss;
+    ss << "BTree: [\n";
+
+    std::function<void(Node*)> dfs = [&](Node* p) {
+      if (p == nullptr)
+        return;
+
+      ss << p->to_string();
+
+      for (int i = 0; i <= p->num_keys_; ++i) {
+        dfs(p->child_[i]);
+      }
+    };
+    dfs(p);
+
+    ss << "]";
+    return ss.str();
+  }
+
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "BTree: [\n";
+
+    std::function<void(Node*)> dfs = [&](Node* p) {
+      if (p == nullptr)
+        return;
+
+      ss << p->to_string();
+
+      for (int i = 0; i <= p->num_keys_; ++i) {
+        dfs(p->child_[i]);
+      }
+    };
+    dfs(root_);
+
+    ss << "]";
+    return ss.str();
+  }
+
+ private:
+  Node* root_;
 };
+
+void solve_case(int Case) {
+  int n, q;
+  std::cin >> n >> q;
+
+  BTree<int, 9> t;
+  for (int i = 1, x; i <= n; ++i) {
+    std::cin >> x;
+    t.Insert(x);
+  }
+
+  int ans = 0;
+  for (int i = 1, op, x, last = 0; i <= q; ++i) {
+    std::cin >> op >> x;
+    x ^= last;
+    switch (op) {
+      case 1:
+        t.Insert(x);
+        break;
+      case 2:
+        t.Delete(x);
+        break;
+      case 3:
+        last = t.GetRank(x);
+        ans ^= last;
+        break;
+      case 4:
+        last = t.GetKth(x);
+        ans ^= last;
+        break;
+      case 5:
+        last = t.GetPrev(x);
+        ans ^= last;
+        break;
+      case 6:
+        last = t.GetNext(x);
+        ans ^= last;
+        break;
+    }
+  }
+  std::cout << ans << "\n";
+}
