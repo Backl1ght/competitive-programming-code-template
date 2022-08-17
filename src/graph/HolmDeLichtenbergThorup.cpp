@@ -510,7 +510,11 @@ std::mt19937 DynamicForest::rng_(std::chrono::steady_clock::now().time_since_epo
  * TODO(backlight):
  *   1. As said in the thesis 1, maintain dynamic sequence using multiple-ary
  * balanced search tree can answer query in O(\frac{\log n}{\log \log n}) time.
- *   2. Thesis 2 propose a fow optimization, try implement it.
+ *   2. Thesis 2 propose a 2 heuristics:
+ *     2.1. Sampling: Pick O(\log n) non-tree edges randomly as replacement candidate first before
+ * the enumeration of non-tree edges.
+ *     2.2. Truncating Levels: At a high level, the size of tree is really small so that it is no
+ * longer worth doing anything sophisticated. Just use brute force.
  */
 class HolmDeLichtenbergThorup {
  private:
@@ -613,6 +617,9 @@ class HolmDeLichtenbergThorup {
     if (size_u > size_v) {
       std::swap(u, v);
     }
+
+    // TODO(backlight): Since the deletion of non-tree edges will not effect the structure of
+    // forest, there is no need to find the root of u and v each time.
 
     // To maintain Invariant (i) mentioned in reference 1 section 3.1, we need to upgrade all tree
     // edges at this level, since we may upgrade non-tree edges later. And tree edges at this level
