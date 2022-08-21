@@ -1,280 +1,251 @@
-class segtree {
+// Problem: P3373 【模板】线段树 2
+// Contest: Luogu
+// URL: https://www.luogu.com.cn/problem/P3373
+// Memory Limit: 125 MB
+// Time Limit: 1000 ms
+//
+// Powered by CP Editor (https://cpeditor.org)
+
+#include <bits/stdc++.h>
+
+#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
+
+#ifdef BACKLIGHT
+#include "debug.h"
+#else
+#define logd(...) ;
+#define ASSERT(x) ;
+#endif
+
+using i64 = int64_t;
+using u64 = uint64_t;
+
+void solve_case(int Case);
+
+int main(int argc, char* argv[]) {
+  CPPIO;
+  int T = 1;
+  // std::cin >> T;
+  for (int t = 1; t <= T; ++t) {
+    solve_case(t);
+  }
+  return 0;
+}
+
+template <typename Data, typename Tag>
+class SegmentTree {
  public:
-  struct node {
-    // 声明变量，记得设置初始值
-    // ie. 最大值: int mx = INT_MIN;
+  struct Node {
+    Node* left_child_;
+    Node* right_child_;
 
-    ...
+    int left_bound_;
+    int right_bound_;
 
-        void
-        apply(int l, int r, ll addv) {
-      // 更新节点信息
-      // ie. 最大值+区间加: mx = mx + addv
+    Data data_;
+    Tag tag_;
 
-      ...
+    void ApplayUpdate(const Tag& tag) {
+      data_.Apply(left_bound_, right_bound_, tag);
+      tag_.Apply(left_bound_, right_bound_, tag);
     }
+
+    void MaintainInfomation() {
+      ASSERT(left_child_ && right_child_);
+
+      data_ = left_child_->data_ + right_child_->data_;
+    }
+
+    void Propagation() {
+      if (tag_.NeedPropagation()) {
+        right_child_->ApplayUpdate(tag_);
+        left_child_->ApplayUpdate(tag_);
+        tag_.Reset();
+      }
+    }
+
+    Node() : left_child_(nullptr), right_child_(nullptr), left_bound_(-1), right_bound_(-1) {}
   };
 
-  friend node operator+(const node& tl, const node& tr) {
-    node t;
-    // 合并两个区间的信息
-    // ie. 区间和: t.sum = t1.sum + t2.sum;
+  using Judger = std::function<bool(Data)>;
 
-    ...
+ public:
+  SegmentTree(const std::vector<Data>& array) : n_(array.size()) {
+    std::function<Node*(int, int)> build = [&](int left, int right) -> Node* {
+      Node* p = new Node();
+      p->left_bound_ = left;
+      p->right_bound_ = right;
 
-        return t;
-  }
-
-  inline void push_down(int x, int l, int r) {
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    // 标记下传
-    // ie. 区间加法
-    // if (tr[x].add != 0) {
-    //     tr[lc].apply(l, mid, tr[x].add);
-    //     tr[rc].apply(mid + 1, r, tr[x].add);
-    //     tr[x].add = 0;
-    // }
-
-    ...
-  }
-
-  /************************************************************************/
-  inline void push_up(int x) {
-    int lc = x << 1, rc = lc | 1;
-    tr[x] = tr[lc] + tr[rc];
-  }
-
-  int n;
-  vector<node> tr;
-
-  void build(int x, int l, int r) {
-    if (l == r) {
-      return;
-    }
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    build(lc, l, mid);
-    build(rc, mid + 1, r);
-    push_up(x);
-  }
-
-  template <class T>
-  void build(int x, int l, int r, const vector<T>& arr) {
-    if (l == r) {
-      tr[x].apply(l, r, arr[l]);
-      return;
-    }
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    build(lc, l, mid, arr);
-    build(rc, mid + 1, r, arr);
-    push_up(x);
-  }
-
-  template <class T>
-  void build(int x, int l, int r, T* arr) {
-    if (l == r) {
-      tr[x].apply(l, r, arr[l]);
-      return;
-    }
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    build(lc, l, mid);
-    build(rc, mid + 1, r);
-    push_up(x);
-  }
-
-  node get(int x, int l, int r, int L, int R) {
-    if (L <= l && r <= R) {
-      return tr[x];
-    }
-    push_down(x, l, r);
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    node res;
-    if (R <= mid)
-      res = get(lc, l, mid, L, R);
-    else if (L > mid)
-      res = get(rc, mid + 1, r, L, R);
-    else
-      res = get(lc, l, mid, L, mid) + get(rc, mid + 1, r, mid + 1, R);
-    push_up(x);
-    return res;
-  }
-
-  template <class... T>
-  void upd(int x, int l, int r, int L, int R, const T&... v) {
-    if (L <= l && r <= R) {
-      tr[x].apply(l, r, v...);
-      return;
-    }
-    push_down(x, l, r);
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    node res;
-    if (L <= mid)
-      upd(lc, l, mid, L, R, v...);
-    if (R > mid)
-      upd(rc, mid + 1, r, L, R, v...);
-    push_up(x);
-  }
-
-  int __get_first(int x, int l, int r, const function<bool(const node&)>& f) {
-    if (l == r) {
-      return l;
-    }
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    push_down(x, l, r);
-    int res;
-    if (f(tr[lc]))
-      res = __get_first(lc, l, mid, f);
-    else
-      res = __get_first(rc, mid + 1, r, f);
-    push_up(x);
-    return res;
-  }
-
-  int get_first(int x, int l, int r, int L, int R, const function<bool(const node&)>& f) {
-    if (L <= l && r <= R) {
-      if (!f(tr[x])) {
-        return -1;
+      if (left == right) {
+        p->data_ = array[left];
+      } else {
+        int middle = (left + right) >> 1;
+        p->left_child_ = build(left, middle);
+        p->right_child_ = build(middle + 1, right);
+        p->MaintainInfomation();
       }
-      return __get_first(x, l, r, f);
-    }
-    push_down(x, l, r);
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    int res;
-    if (L <= mid)
-      res = get_first(lc, l, mid, L, R, f);
-    if (res == -1 && R > mid)
-      res = get_first(rc, mid + 1, r, L, R, f);
-    push_up(x);
-    return res;
+
+      return p;
+    };
+
+    root_ = build(0, n_);
   }
 
-  int __get_last(int x, int l, int r, const function<bool(const node&)>& f) {
-    if (l == r) {
-      return l;
-    }
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    push_down(x, l, r);
-    int res;
-    if (f(tr[lc]))
-      res = __get_first(rc, mid + 1, r, f);
-    else
-      res = __get_first(lc, l, mid, f);
-    push_up(x);
-    return res;
+  ~SegmentTree() {
+    std::function<void(Node*)> dfs = [&](Node* p) {
+      if (!p)
+        return;
+      dfs(p->left_child_);
+      dfs(p->right_child_);
+      delete p;
+    };
+
+    dfs(root_);
   }
 
-  int get_last(int x, int l, int r, int L, int R, const function<bool(const node&)>& f) {
-    if (L <= l && r <= R) {
-      if (!f(tr[x])) {
-        return -1;
-      }
-      return __get_first(x, l, r, f);
-    }
-    push_down(x, l, r);
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    int res;
-    if (R > mid)
-      res = get_last(rc, mid + 1, r, L, R, f);
-    if (res == -1 && L <= mid)
-      res = get_last(lc, l, mid, L, R, f);
-    push_up(x);
-    return res;
-  }
-
-  int find_first(int l, int r, const function<bool(const node&)>& f) {
-    int L = l, R = r, mid, res = -1;
-    while (L <= R) {
-      mid = (L + R) >> 1;
-      if (f(get(l, mid)))
-        R = mid - 1, res = mid;
-      else
-        L = mid + 1;
-    }
-    return res;
-  }
-
-  int find_last(int l, int r, const function<bool(const node&)>& f) {
-    int L = l, R = r, mid, res = -1;
-    while (L <= R) {
-      mid = (L + R) >> 1;
-      if (f(get(l, mid)))
-        L = mid + 1, res = mid;
-      else
-        R = mid - 1;
-    }
-    return res;
-  }
-
-  segtree(int _n)
-      : n(_n) {
-    assert(n > 0);
-    tr.resize((n << 2) + 5);
-    build(1, 1, n);
-  }
-
-  template <class T>
-  segtree(const vector<T>& arr) {
-    n = arr.size() - 1;
-    assert(n > 0);
-    tr.resize((n << 2) + 5);
-    build(1, 1, n, arr);
-  }
-
-  template <class T>
-  segtree(int _n, T* arr) {
-    n = _n;
-    assert(n > 0);
-    tr.resize((n << 2) + 5);
-    build(1, 1, n, arr);
-  }
-
-  node get(int l, int r) {
-    assert(l >= 1 && l <= r && r <= n);
-    return get(1, 1, n, l, r);
-  }
-
-  node get(int p) {
-    assert(1 <= p && p <= n);
-    return get(1, 1, n, p, p);
-  }
-
-  template <class... T>
-  void upd(int l, int r, const T&... v) {
-    assert(l >= 1 && l <= r && r <= n);
-    upd(1, 1, n, l, r, v...);
-  }
-
-  template <class... T>
-  void upd1(int p, const T&... v) {
-    assert(p >= 1 && p <= n);
-    upd(1, 1, n, p, p, v...);
-  }
-
-  int get_first(int l, int r, const function<bool(const node&)>& f) {
-    assert(l >= 1 && l <= r && r <= n);
-    return get_first(1, 1, n, l, r, f);
-  }
-
-  int get_last(int l, int r, const function<bool(const node&)>& f) {
-    assert(l >= 1 && l <= r && r <= n);
-    return get_last(1, 1, n, l, r, f);
-  }
-
-  void print(int x, int l, int r) {
-    if (l == r) {
-      cerr << tr[x].sum << " ";
+  void UpdateInternal(Node* p, int left, int right, const Tag& tag) {
+    ASSERT(p);
+    if (p->left_bound_ >= left && p->right_bound_ <= right) {
+      p->ApplayUpdate(tag);
       return;
     }
-    push_down(x, l, r);
-    int lc = x << 1, rc = lc | 1, mid = (l + r) >> 1;
-    print(lc, l, mid);
-    print(rc, mid + 1, r);
+
+    p->Propagation();
+
+    if (p->left_child_->right_bound_ >= left)
+      UpdateInternal(p->left_child_, left, right, tag);
+    if (p->right_child_->left_bound_ <= right)
+      UpdateInternal(p->right_child_, left, right, tag);
+
+    p->MaintainInfomation();
   }
 
-  void print() {
-#ifdef BACKLIGHT
-    cerr << "SEGTREE: " << endl;
-    print(1, 1, n);
-    cerr << "\n-----------------------------" << endl;
-#endif
+  void Update(int left, int right, const Tag& tag) {
+    ASSERT(left >= 0 && right < n_);
+
+    UpdateInternal(root_, left, right, tag);
+  }
+
+  Data QueryInternal(Node* p, int left, int right) {
+    ASSERT(p);
+
+    if (p->left_bound_ >= left && p->right_bound_ <= right)
+      return p->data_;
+
+    p->Propagation();
+
+    Data result;
+    if (p->left_child_->right_bound_ >= left)
+      result = result + QueryInternal(p->left_child_, left, right);
+    if (p->right_child_->left_bound_ <= right)
+      result = result + QueryInternal(p->right_child_, left, right);
+
+    return result;
+  }
+
+  Data Query(int left, int right) {
+    ASSERT(left >= 0 && right < n_);
+
+    return QueryInternal(root_, left, right);
+  }
+
+  std::pair<int, Data> FindLeftmostIf(Judger judger) {
+    Data result;
+    return {-1, result};
+  }
+
+  std::pair<int, Data> FindRightmostIf(Judger judger) {
+    Data result;
+    return {-1, result};
+  }
+
+ private:
+  int n_;
+  Node* root_;
+};
+
+int p;
+
+struct Tag {
+ public:
+  i64 range_add_;
+  i64 range_mul_;
+
+ public:
+  Tag(i64 range_add = 0, i64 range_mul = 1) : range_add_(range_add), range_mul_(range_mul) {}
+
+  bool NeedPropagation() { return range_add_ != 0 || range_mul_ != 1; }
+
+  void Apply(int left, int right, const Tag& tag) {
+    range_mul_ = range_mul_ * tag.range_mul_ % p;
+    range_add_ = range_add_ * tag.range_mul_ % p;
+    range_add_ = (range_add_ + tag.range_add_) % p;
+  }
+
+  void Reset() {
+    range_add_ = 0;
+    range_mul_ = 1;
   }
 };
+
+struct Data {
+ public:
+  i64 range_sum_;
+
+ public:
+  Data(i64 range_sum = 0) : range_sum_(range_sum) {}
+
+  void Apply(int left, int right, const Tag& tag) {
+    int length = right - left + 1;
+
+    range_sum_ = range_sum_ * tag.range_mul_ % p;
+    range_sum_ = (range_sum_ + tag.range_add_ * length % p) % p;
+  }
+
+  friend Data operator+(const Data& lhs, const Data& rhs) {
+    Data result;
+
+    result.range_sum_ = (lhs.range_sum_ + rhs.range_sum_) % p;
+
+    return result;
+  }
+};
+
+void solve_case(int Case) {
+  int n, m;
+  std::cin >> n >> m >> p;
+
+  std::vector<Data> v(n);
+  for (int i = 0; i < n; ++i) {
+    i64 x;
+    std::cin >> x;
+
+    v[i] = Data(x);
+  }
+
+  SegmentTree<Data, Tag> seg(v);
+
+  for (int i = 0; i < m; ++i) {
+    int op, x, y;
+    i64 k;
+    std::cin >> op;
+    if (op == 1) {
+      std::cin >> x >> y >> k;
+      --x, --y;
+
+      seg.Update(x, y, Tag(0, k));
+    } else if (op == 2) {
+      std::cin >> x >> y >> k;
+      --x, --y;
+
+      seg.Update(x, y, Tag(k, 1));
+    } else if (op == 3) {
+      std::cin >> x >> y;
+      --x, --y;
+
+      Data data = seg.Query(x, y);
+      std::cout << data.range_sum_ << "\n";
+    }
+  }
+}
