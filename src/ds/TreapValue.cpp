@@ -1,38 +1,3 @@
-// Problem: P6136 【模板】普通平衡树（数据加强版）
-// Contest: Luogu
-// URL: https://www.luogu.com.cn/problem/P6136
-// Memory Limit: 88 MB
-// Time Limit: 3000 ms
-//
-// Powered by CP Editor (https://cpeditor.org)
-
-#include <bits/stdc++.h>
-
-#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
-#define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
-
-#ifdef BACKLIGHT
-#include "debug.h"
-#else
-#define logd(...) ;
-#endif
-
-using i64 = int64_t;
-using u64 = uint64_t;
-
-void solve_case(int Case);
-
-int main(int argc, char* argv[]) {
-  freopen(argv[1], "r", stdin);
-  CPPIO;
-  int T = 1;
-  // std::cin >> T;
-  for (int t = 1; t <= T; ++t) {
-    solve_case(t);
-  }
-  return 0;
-}
-
 template <typename ValueType>
 class Treap {
  private:
@@ -203,53 +168,23 @@ class Treap {
 
     return result;
   }
+
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "Treap: [";
+
+    std::function<void(Node*)> dfs = [&](Node* p) {
+      if (p == nullptr)
+        return;
+
+      dfs(p->left);
+      ss << serialize(p->value) << ", ";
+      dfs(p->right);
+    };
+    dfs(root_);
+
+    ss << "]\n";
+
+    return ss.str();
+  }
 };
-
-void solve_case(int Case) {
-  int n, q;
-  std::cin >> n >> q;
-
-  Treap<int> t;
-  for (int i = 1, x; i <= n; ++i) {
-    std::cin >> x;
-    t.Insert(x);
-  }
-
-  int ans = 0;
-  for (int i = 1, op, x, last = 0; i <= q; ++i) {
-    std::cin >> op >> x;
-    x ^= last;
-    logd(op, x);
-    // std::cerr << t.ToString() << std::endl;
-    switch (op) {
-      case 1:
-        t.Insert(x);
-        break;
-      case 2:
-        t.Delete(x);
-        break;
-      case 3:
-        last = t.GetRank(x);
-        ans ^= last;
-        logd(last);
-        break;
-      case 4:
-        last = t.GetKth(x);
-        ans ^= last;
-        logd(last);
-        break;
-      case 5:
-        last = t.GetPrev(x);
-        ans ^= last;
-        logd(last);
-        break;
-      case 6:
-        last = t.GetNext(x);
-        ans ^= last;
-        logd(last);
-        break;
-    }
-    // std::cerr << t.ToString() << std::endl;
-  }
-  std::cout << ans << "\n";
-}
