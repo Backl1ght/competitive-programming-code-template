@@ -1,11 +1,11 @@
 template <typename T>
-struct SGTree {
+struct ScapegoatTree {
   static constexpr double alpha = 0.75;  // alpha \in (0.5, 1)
   int root, tot, buf_size;
   T v[N];
   int s[N], sz[N], sd[N], cnt[N], l[N], r[N], buf[N];
 
-  SGTree() {
+  ScapegoatTree() {
     root = tot = 0;
   }
 
@@ -159,7 +159,7 @@ struct SGTree {
   }
 
   void debug() {
-    cerr << "SGTree:" << endl;
+    cerr << "ScapegoatTree:" << endl;
     debug(root);
     cerr << endl;
   }
