@@ -18,6 +18,7 @@ class LinkCutTree {
     Node* parent_;
 
     int reverse_;
+    int size_;
 
     Data node_data_;
     Data path_data_;
@@ -29,6 +30,7 @@ class LinkCutTree {
           right_(nullptr),
           parent_(nullptr),
           reverse_(0),
+          size_(1),
           node_data_(),
           path_data_(),
           tag_() {}
@@ -39,9 +41,9 @@ class LinkCutTree {
     }
 
     void Apply(const Tag& tag) {
-      node_data_.Apply(tag_);
-      path_data_.Apply(tag_);
-      tag_.Apply(tag_);
+      node_data_.Apply(1, tag);
+      path_data_.Apply(size_, tag);
+      tag_.Apply(tag);
     }
 
     void Propagation() {
@@ -63,6 +65,12 @@ class LinkCutTree {
     }
 
     void Maintain() {
+      size_ = 1;
+      if (left_)
+        size_ += left_->size_;
+      if (right_)
+        size_ += right_->size_;
+
       path_data_ = node_data_;
       if (left_)
         path_data_ = path_data_ + left_->path_data_;
@@ -356,12 +364,12 @@ class LinkCutTree {
 
   void UpdatePath(int u, int v, const Tag& tag) {
     Expose(u, v);
-    vertices_[v].Applay(tag);
+    vertices_[v]->Apply(tag);
   }
 
   const Data QueryPath(int u, int v) {
     Expose(u, v);
-    return vertices_[v].data_;
+    return vertices_[v]->path_data_;
   }
 
   const Data QuerySubtree(int u) {
@@ -393,7 +401,7 @@ struct Data {
  public:
   Data() {}
 
-  void Apply(const Tag& tag) {}
+  void Apply(int size, const Tag& tag) {}
 
   friend Data operator+(const Data& lhs, const Data& rhs) {
     Data result;
@@ -401,8 +409,21 @@ struct Data {
     return result;
   }
 
-  friend Data operator-(const Data& lhs, const Data& rhs) {
-    Data result;
+  std::string to_string() const { return "Data"; }
+
+ public:
+};
+
+struct SubtreeData {
+ public:
+  friend SubtreeData operator+(const SubtreeData& lhs, const SubtreeData& rhs) {
+    SubtreeData result;
+
+    return result;
+  }
+
+  friend SubtreeData operator-(const SubtreeData& lhs, const SubtreeData& rhs) {
+    SubtreeData result;
 
     return result;
   }
