@@ -3,6 +3,11 @@
  *
  * @reference: A Data Structure for Dynamic Trees. by Sleator and Tarjan.
  *             https://www.cs.cmu.edu/~sleator/papers/dynamic-trees.pdf
+ *
+ * TODO(backlight):
+ *   1. I have not found out a way to maintain subtree propeties elegently. So this work may not be
+ * done recently. But this goal can be done by modifying the template, or just use euler tour tree
+ * or top tree which can solve problems about subtree elegently.
  */
 template <typename Data, typename Tag>
 class LinkCutTree {
