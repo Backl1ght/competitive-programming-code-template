@@ -180,6 +180,9 @@ class LinkCutTree {
     }
   }
 
+  /**
+   * Splay p until p is root of an auxiliary tree.
+   */
   void Splay(Node* p) {
     Node* temp = p;
 
@@ -206,11 +209,13 @@ class LinkCutTree {
   void Splay(int u) { Splay(vertices_[u]); }
 
   void Access(int u) {
-    // TODO(backlight): add some comments.
+    // Jump from u to root of original tree.
     Node* p = vertices_[u];
     Node* last = nullptr;
     while (!last || !last->IsRootOfOriginalTree()) {
       Splay(p);
+
+      // Append last path to the back of current path.
       p->right_ = last;
       p->Maintain();
 
@@ -254,6 +259,12 @@ class LinkCutTree {
     return p;
   }
 
+  /**
+   * Make path u...v to be the root path.
+   *
+   * After this process, the root of auxiliary tree representing root path will be node(v). Further
+   * operation on path u...v can be made by using lazy propagation tech on splay tree.
+   */
   void Expose(int u, int v) {
     MakeRoot(u);
     Access(v);
@@ -335,11 +346,10 @@ class LinkCutTree {
     // vertex(u) is the lowest vertex on the root path.
     //
     // After FindRoot, vertex(v) will be the deepest vertex on the root path. And node(v) will be
-    // the root of auxiliary tree.
+    // the root of auxiliary tree. And root path contain only vertex(u) and vertex(v).
     //
     // That is, is there is an edge between vertex(u) and vertex(v), node(u) will be the left child
-    // of node(v), and node(u) has no child, node(v) has no right child. (And the root path contain
-    // only u and v?)
+    // of node(v), and node(u) has no child, node(v) has no right child.
     if (vertices_[u]->parent_ == vertices_[v] && vertices_[v]->left_ == vertices_[u] &&
         vertices_[v]->right_ == nullptr) {
       vertices_[u]->parent_ = nullptr;
