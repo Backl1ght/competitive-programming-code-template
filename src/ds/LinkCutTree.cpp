@@ -3,13 +3,8 @@
  *
  * @reference: A Data Structure for Dynamic Trees. by Sleator and Tarjan.
  *             https://www.cs.cmu.edu/~sleator/papers/dynamic-trees.pdf
- *
- * TODO(backlight):
- *   1. I have not found out a way to maintain subtree propeties elegently. So this work may not be
- * done recently. But this goal can be done by modifying the template, or just use euler tour tree
- * or top tree which can solve problems about subtree elegently.
  */
-template <typename Data, typename Tag>
+template <typename Data, typename SubtreeData, typename Tag>
 class LinkCutTree {
  public:
   /**
@@ -29,6 +24,10 @@ class LinkCutTree {
     Data path_data_;
     Tag tag_;
 
+    SubtreeData node_subtree_data_;
+    SubtreeData real_subtree_data_;
+    SubtreeData virtual_subtree_data_;
+
     Node(int vertex_id)
         : vertex_id_(vertex_id),
           left_(nullptr),
@@ -38,7 +37,10 @@ class LinkCutTree {
           size_(1),
           node_data_(),
           path_data_(),
-          tag_() {}
+          tag_(),
+          node_subtree_data_(),
+          real_subtree_data_(),
+          virtual_subtree_data_() {}
 
     void Reverse() {
       std::swap(left_, right_);
@@ -81,6 +83,12 @@ class LinkCutTree {
         path_data_ = path_data_ + left_->path_data_;
       if (right_)
         path_data_ = path_data_ + right_->path_data_;
+
+      real_subtree_data_ = node_subtree_data_ + virtual_subtree_data_;
+      if (left_)
+        real_subtree_data_ = real_subtree_data_ + left_->real_subtree_data_;
+      if (right_)
+        real_subtree_data_ = real_subtree_data_ + right_->real_subtree_data_;
     }
 
     bool IsLeftChild() {
@@ -221,6 +229,10 @@ class LinkCutTree {
       Splay(p);
 
       // Append last path to the back of current path.
+      if (p->right_)
+        p->virtual_subtree_data_ = p->virtual_subtree_data_ + p->right_->real_subtree_data_;
+      if (last)
+        p->virtual_subtree_data_ = p->virtual_subtree_data_ - last->real_subtree_data_;
       p->right_ = last;
       p->Maintain();
 
@@ -336,6 +348,10 @@ class LinkCutTree {
     // trees, just set the parent of node(u) to node(v). Setting parent of node(v) to node(u) will
     // work, too.
     vertices_[u]->parent_ = vertices_[v];
+
+    vertices_[v]->virtual_subtree_data_ =
+        vertices_[v]->virtual_subtree_data_ + vertices_[u]->real_subtree_data_;
+    vertices_[v]->Maintain();
   }
 
   void Cut(int u, int v) {
@@ -387,9 +403,17 @@ class LinkCutTree {
     return vertices_[v]->path_data_;
   }
 
-  const Data QuerySubtree(int u) {
-    // TODO(backlight): support subtree queries like size of subtree, etc.
-    return Data();
+  void UpdateSubtreeNode(int u, const SubtreeData& node_subtree_data) {
+    MakeRoot(u);
+    vertices_[u]->node_subtree_data_ = node_subtree_data;
+    vertices_[u]->Maintain();
+  }
+
+  // TODO(backlight): support subtree data path update.
+
+  const SubtreeData QuerySubtree(int u) {
+    MakeRoot(u);
+    return vertices_[u]->real_subtree_data_;
   }
 
  private:
