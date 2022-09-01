@@ -1,7 +1,7 @@
 template <typename ValueType>
 class RMQ {
  private:
-  using Operator = std::function<ValueType(ValueType, ValueType)>;
+  using Operator = std::function<ValueType(const ValueType, const ValueType)>;
 
   int n_;
   std::vector<std::vector<ValueType>> a_;
@@ -9,7 +9,7 @@ class RMQ {
   Operator op_;
 
  public:
-  RMQ(const std::vector<ValueType>& a, Operator op) : op_(op) {
+  RMQ(const std::vector<ValueType>& a, const Operator& op) : op_(op) {
     n_ = a.size();
 
     lg_.resize(n_ + 1);
@@ -29,7 +29,7 @@ class RMQ {
     }
   }
 
-  ValueType get(int l, int r) {
+  const ValueType Query(int l, int r) {
     int k = lg_[r - l + 1];
     return op_(a_[l][k], a_[r - (1 << k) + 1][k]);
   }
