@@ -1,7 +1,7 @@
 template <typename ValueType>
 class RMQ {
  private:
-  using Operator = std::function<ValueType(const ValueType, const ValueType)>;
+  using Operator = std::function<ValueType(const ValueType&, const ValueType&)>;
 
   int n_;
   std::vector<std::vector<ValueType>> a_;
