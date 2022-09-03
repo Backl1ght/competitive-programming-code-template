@@ -1,5 +1,8 @@
-constexpr int P = 998244353;
-vector<int> rev, roots{0, 1};
+namespace Polynomial {
+
+constexpr int P = 998244353, G = 3;
+std::vector<int> rev, roots{0, 1};
+
 int power(int a, int b) {
   int r = 1;
   while (b) {
@@ -10,7 +13,8 @@ int power(int a, int b) {
   }
   return r;
 }
-void dft(vector<int>& a) {
+
+void dft(std::vector<int>& a) {
   int n = a.size();
   if (int(rev.size()) != n) {
     int k = __builtin_ctz(n) - 1;
@@ -20,12 +24,12 @@ void dft(vector<int>& a) {
   }
   for (int i = 0; i < n; ++i)
     if (rev[i] < i)
-      swap(a[i], a[rev[i]]);
+      std::swap(a[i], a[rev[i]]);
   if (int(roots.size()) < n) {
     int k = __builtin_ctz(roots.size());
     roots.resize(n);
     while ((1 << k) < n) {
-      int e = power(3, (P - 1) >> (k + 1));
+      int e = power(G, (P - 1) >> (k + 1));
       for (int i = 1 << (k - 1); i < (1 << k); ++i) {
         roots[2 * i] = roots[i];
         roots[2 * i + 1] = 1ll * roots[i] * e % P;
@@ -50,48 +54,32 @@ void dft(vector<int>& a) {
     }
   }
 }
-void idft(vector<int>& a) {
+
+void idft(std::vector<int>& a) {
   int n = a.size();
-  reverse(a.begin() + 1, a.end());
+  std::reverse(a.begin() + 1, a.end());
   dft(a);
   int inv = power(n, P - 2);
   for (int i = 0; i < n; ++i)
     a[i] = 1ll * a[i] * inv % P;
 }
+
 struct poly {
-  vector<int> a;
+  std::vector<int> a;
 
   poly() {}
   poly(int f0) { a = {f0}; }
-  poly(const vector<int>& f)
-      : a(f) {
+  poly(const std::vector<int>& f) : a(f) {
     while (!a.empty() && !a.back())
       a.pop_back();
   }
-  poly(const vector<int>& f, int n)
-      : a(f) {
-    a.resize(n);
-  }
-  int size() const {
-    return a.size();
-  }
-  int deg() const {
-    return a.size() - 1;
-  }
+  poly(const std::vector<int>& f, int n) : a(f) { a.resize(n); }
+  int size() const { return a.size(); }
+  int deg() const { return a.size() - 1; }
   int operator[](int idx) const {
     if (idx < 0 || idx >= size())
       return 0;
     return a[idx];
-  }
-  void input(int n) {
-    a.resize(n);
-    FE(v, a)
-    rd(v);
-  }
-  void output(int n) {
-    for (int i = 0; i < n - 1; ++i)
-      printf("%d ", (*this)[i]);
-    printf("%d\n", (*this)[n - 1]);
   }
   poly mulxk(int k) const {
     auto b = a;
@@ -99,20 +87,18 @@ struct poly {
     return poly(b);
   }
   poly modxk(int k) const {
-    k = min(k, size());
+    k = std::min(k, size());
     return poly(std::vector<int>(a.begin(), a.begin() + k));
   }
-  poly alignxk(int k) const {
-    return poly(a, k);
-  }
+  poly alignxk(int k) const { return poly(a, k); }
   poly divxk(int k) const {
     if (size() <= k)
       return poly();
-    return poly(vector<int>(a.begin() + k, a.end()));
+    return poly(std::vector<int>(a.begin() + k, a.end()));
   }
   friend poly operator+(const poly& f, const poly& g) {
-    int k = max(f.size(), g.size());
-    vector<int> res(k);
+    int k = std::max(f.size(), g.size());
+    std::vector<int> res(k);
     for (int i = 0; i < k; ++i) {
       res[i] = f[i] + g[i];
       if (res[i] >= P)
@@ -121,8 +107,8 @@ struct poly {
     return poly(res);
   }
   friend poly operator-(const poly& f, const poly& g) {
-    int k = max(f.size(), g.size());
-    vector<int> res(k);
+    int k = std::max(f.size(), g.size());
+    std::vector<int> res(k);
     for (int i = 0; i < k; ++i) {
       res[i] = f[i] - g[i];
       if (res[i] < 0)
@@ -134,7 +120,7 @@ struct poly {
     int sz = 1, k = f.size() + g.size() - 1;
     while (sz < k)
       sz *= 2;
-    vector<int> p = f.a, q = g.a;
+    std::vector<int> p = f.a, q = g.a;
     p.resize(sz);
     q.resize(sz);
     dft(p);
@@ -144,32 +130,18 @@ struct poly {
     idft(p);
     return poly(p);
   }
-  friend poly operator/(const poly& f, const poly& g) {
-    return f.divide(g).first;
-  }
-  friend poly operator%(const poly& f, const poly& g) {
-    return f.divide(g).second;
-  }
-  poly& operator+=(const poly& f) {
-    return (*this) = (*this) + f;
-  }
-  poly& operator-=(const poly& f) {
-    return (*this) = (*this) - f;
-  }
-  poly& operator*=(const poly& f) {
-    return (*this) = (*this) * f;
-  }
-  poly& operator/=(const poly& f) {
-    return (*this) = divide(f).first;
-  }
-  poly& operator%=(const poly& f) {
-    return (*this) = divide(f).second;
-  }
+  friend poly operator/(const poly& f, const poly& g) { return f.divide(g).first; }
+  friend poly operator%(const poly& f, const poly& g) { return f.divide(g).second; }
+  poly& operator+=(const poly& f) { return (*this) = (*this) + f; }
+  poly& operator-=(const poly& f) { return (*this) = (*this) - f; }
+  poly& operator*=(const poly& f) { return (*this) = (*this) * f; }
+  poly& operator/=(const poly& f) { return (*this) = divide(f).first; }
+  poly& operator%=(const poly& f) { return (*this) = divide(f).second; }
   poly derivative() const {
     if (a.empty())
       return poly();
     int n = a.size();
-    vector<int> res(n - 1);
+    std::vector<int> res(n - 1);
     for (int i = 0; i < n - 1; ++i)
       res[i] = 1ll * (i + 1) * a[i + 1] % P;
     return poly(res);
@@ -178,14 +150,12 @@ struct poly {
     if (a.empty())
       return poly();
     int n = a.size();
-    vector<int> res(n + 1);
+    std::vector<int> res(n + 1);
     for (int i = 0; i < n; ++i)
       res[i + 1] = 1ll * a[i] * power(i + 1, P - 2) % P;
     return poly(res);
   }
-  poly rev() const {
-    return poly(vector<int>(a.rbegin(), a.rend()));
-  }
+  poly rev() const { return poly(std::vector<int>(a.rbegin(), a.rend())); }
   poly inv(int m) const {
     poly x(power(a[0], P - 2));
     int k = 1;
@@ -195,9 +165,7 @@ struct poly {
     }
     return x.modxk(m);
   }
-  poly log(int m) const {
-    return (derivative() * inv(m)).integral().modxk(m);
-  }
+  poly log(int m) const { return (derivative() * inv(m)).integral().modxk(m); }
   poly exp(int m) const {
     poly x(1);
     int k = 1;
@@ -217,8 +185,7 @@ struct poly {
     return x.modxk(m);
   }
   poly sin() const {
-    int g = 3;  // g: the ord of P
-    int i = power(g, (P - 1) / 4);
+    int i = power(G, (P - 1) / 4);
     poly p = i * (*this);
     p = p.exp(p.size());
 
@@ -229,8 +196,7 @@ struct poly {
     return r;
   }
   poly cos() const {
-    int g = 3;  // g: the ord of P
-    int i = power(g, (P - 1) / 4);
+    int i = power(G, (P - 1) / 4);
     poly p = i * (*this);
     p = p.exp(p.size());
 
@@ -240,12 +206,8 @@ struct poly {
     poly r = (p + q) * power(2, P - 2);
     return r;
   }
-  poly tan() const {
-    return sin() / cos();
-  }
-  poly cot() const {
-    return cos() / sin();
-  }
+  poly tan() const { return sin() / cos(); }
+  poly cot() const { return cos() / sin(); }
   poly arcsin() {
     poly sq = (*this) * (*this).modxk(size());
     for (int i = 0; i < size(); ++i)
@@ -282,7 +244,7 @@ struct poly {
     int n = b.size();
     return ((*this) * b.rev()).divxk(n - 1);
   }
-  pair<poly, poly> divide(const poly& g) const {
+  std::pair<poly, poly> divide(const poly& g) const {
     int n = a.size(), m = g.size();
     if (n < m)
       return make_pair(poly(), a);
@@ -297,18 +259,18 @@ struct poly {
 
     poly r = ((*this) - g * q).modxk(m - 1);
 
-    return make_pair(q, r);
+    return std::make_pair(q, r);
   }
-  vector<int> eval(vector<int> x) const {
+  std::vector<int> eval(std::vector<int> x) const {
     if (size() == 0)
-      return vector<int>(x.size(), 0);
-    const int n = max(int(x.size()), size());
-    vector<poly> q(4 * n);
-    vector<int> ans(x.size());
+      return std::vector<int>(x.size(), 0);
+    const int n = std::max(int(x.size()), size());
+    std::vector<poly> q(4 * n);
+    std::vector<int> ans(x.size());
     x.resize(n);
-    function<void(int, int, int)> build = [&](int p, int l, int r) {
+    std::function<void(int, int, int)> build = [&](int p, int l, int r) {
       if (r - l == 1) {
-        q[p] = vector<int>{1, (P - x[l]) % P};
+        q[p] = std::vector<int>{1, (P - x[l]) % P};
       } else {
         int m = (l + r) / 2;
         build(2 * p, l, m);
@@ -317,7 +279,8 @@ struct poly {
       }
     };
     build(1, 0, n);
-    function<void(int, int, int, const poly&)> work = [&](int p, int l, int r, const poly& num) {
+    std::function<void(int, int, int, const poly&)> work = [&](int p, int l, int r,
+                                                               const poly& num) {
       if (r - l == 1) {
         if (l < int(ans.size()))
           ans[l] = num[0];
@@ -331,3 +294,5 @@ struct poly {
     return ans;
   }
 };
+
+}  // namespace Polynomial
