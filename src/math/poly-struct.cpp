@@ -81,6 +81,13 @@ struct poly {
       return 0;
     return a[idx];
   }
+  std::string to_string() const {
+    std::stringstream ss;
+    ss << "poly: ";
+    for (int v : a)
+      ss << v << " ";
+    return ss.str();
+  }
   poly mulxk(int k) const {
     auto b = a;
     b.insert(b.begin(), k, 0);
