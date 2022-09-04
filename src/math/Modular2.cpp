@@ -1,9 +1,6 @@
-template <typename ValueType, ValueType mod_, typename SupperType = int64_t>
+template <typename ValueType, ValueType mod_, typename SupperType>
 class Modular {
- private:
-  ValueType value_;
-
-  ValueType normalize(ValueType value) const {
+  static ValueType normalize(ValueType value) {
     if (value >= 0 && value < mod_)
       return value;
     value %= mod_;
@@ -12,7 +9,7 @@ class Modular {
     return value;
   }
 
-  ValueType power(ValueType value, size_t exponent) const {
+  static ValueType power(ValueType value, size_t exponent) {
     ValueType result = 1;
     ValueType base = value;
     while (exponent) {
@@ -25,30 +22,31 @@ class Modular {
   }
 
  public:
-  Modular() : value_(0) {}
+  Modular(ValueType value = 0) : value_(normalize(value)) {}
 
-  Modular(const ValueType& value) : value_(normalize(value)) {}
+  Modular(SupperType value) : value_(normalize(value % mod_)) {}
 
   ValueType value() const { return value_; }
 
   Modular inv() const { return Modular(power(value_, mod_ - 2)); }
 
-  Modular power(size_t exponent) const {
-    return Modular(power(value_, exponent));
-  }
+  Modular power(size_t exponent) const { return Modular(power(value_, exponent)); }
 
   friend Modular operator+(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() + rhs.value() >= mod_
-                           ? lhs.value() + rhs.value() - mod_
-                           : lhs.value() + rhs.value();
+    ValueType result = lhs.value() + rhs.value() >= mod_ ? lhs.value() + rhs.value() - mod_
+                                                         : lhs.value() + rhs.value();
     return Modular(result);
   }
 
   friend Modular operator-(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() - rhs.value() < 0
-                           ? lhs.value() - rhs.value() + mod_
-                           : lhs.value() - rhs.value();
+    ValueType result = lhs.value() - rhs.value() < 0 ? lhs.value() - rhs.value() + mod_
+                                                     : lhs.value() - rhs.value();
     return Modular(result);
+  }
+
+  friend Modular operator-(const Modular& lhs) {
+    ValueType result = normalize(-lhs.value() + mod_);
+    return result;
   }
 
   friend Modular operator*(const Modular& lhs, const Modular& rhs) {
@@ -60,28 +58,15 @@ class Modular {
     ValueType result = SupperType(1) * lhs.value() * rhs.inv().value() % mod_;
     return Modular(result);
   }
+
+  std::string to_string() const { return std::string(value_); }
+
+ private:
+  ValueType value_;
 };
-template <typename StreamType,
-          typename ValueType,
-          ValueType mod,
-          typename SupperType = int64_t>
-StreamType& operator<<(StreamType& out,
-                       const Modular<ValueType, mod, SupperType>& modular) {
-  return out << modular.value();
-}
-template <typename StreamType,
-          typename ValueType,
-          ValueType mod,
-          typename SupperType = int64_t>
-StreamType& operator>>(StreamType& in,
-                       Modular<ValueType, mod, SupperType>& modular) {
-  ValueType value;
-  in >> value;
-  modular = Modular<ValueType, mod, SupperType>(value);
-  return in;
-}
-// using Mint = Modular<int, 1'000'000'007>;
-using Mint = Modular<int, 998'244'353>;
+
+// using Mint = Modular<int, 1'000'000'007, int64_t>;
+using Mint = Modular<int, 998'244'353, int64_t>;
 
 class Binom {
  private:
