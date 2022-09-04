@@ -4,20 +4,20 @@ class Matrix {
   using MatrixDataType = std::vector<std::vector<ValueType>>;
   using RowDataType = std::vector<ValueType>;
 
-  size_t n_;
-  size_t m_;
+  int n_;
+  int m_;
   MatrixDataType a_;
 
  public:
-  static Matrix zero(size_t n, size_t m) {
+  static Matrix zero(int n, int m) {
     MatrixDataType data(n, RowDataType(m, 0));
     return Matrix(move(data));
   }
 
-  static Matrix one(size_t n, size_t m) {
+  static Matrix one(int n, int m) {
     assert(n == m);
     MatrixDataType data(n, RowDataType(m, 0));
-    for (size_t i = 0; i < n; ++i) {
+    for (int i = 0; i < n; ++i) {
       data[i][i] = 1;
     }
     return Matrix(move(data));
@@ -30,21 +30,21 @@ class Matrix {
 
   Matrix(const Matrix& matrix) : n_(matrix.n_), m_(matrix.m_), a_(matrix.a_) {}
 
-  size_t n() const { return n_; }
+  int n() const { return n_; }
 
-  size_t m() const { return m_; }
+  int m() const { return m_; }
 
-  RowDataType& operator[](size_t row) { return a_[row]; }
+  RowDataType& operator[](int row) { return a_[row]; }
 
-  const ValueType& at(size_t row, size_t col) const { return a_[row][col]; }
+  const ValueType& at(int row, int col) const { return a_[row][col]; }
 
   friend Matrix operator*(const Matrix& lhs, const Matrix& rhs) {
     assert(lhs.m() == rhs.n());
 
     Matrix result = zero(lhs.n(), rhs.m());
-    for (size_t i = 0; i < lhs.n(); ++i) {
-      for (size_t j = 0; j < lhs.m(); ++j) {
-        for (size_t k = 0; k < rhs.m(); ++k) {
+    for (int i = 0; i < lhs.n(); ++i) {
+      for (int j = 0; j < lhs.m(); ++j) {
+        for (int k = 0; k < rhs.m(); ++k) {
           result[i][k] = result.at(i, k) + lhs.at(i, j) * rhs.at(j, k);
         }
       }
@@ -58,7 +58,7 @@ class Matrix {
     a_ = rhs.a_;
   }
 
-  friend Matrix operator^(const Matrix& lhs, size_t exponent) {
+  friend Matrix operator^(const Matrix& lhs, int64_t exponent) {
     assert(lhs.n() == lhs.m());
 
     Matrix result = one(lhs.n(), lhs.m());
@@ -71,17 +71,17 @@ class Matrix {
     }
     return result;
   }
-};
-template <typename ValueType>
-std::string to_string(const Matrix<ValueType>& matrix) {
-  std::stringstream ss;
-  ss << "[";
-  for (size_t i = 0; i < matrix.n(); ++i) {
+
+  std::string to_string() const {
+    std::stringstream ss;
     ss << "[";
-    for (size_t j = 0; j < matrix.m(); ++j) {
-      ss << matrix.at(i, j).value() << ",]"[j == matrix.m() - 1];
+    for (int i = 0; i < n_; ++i) {
+      ss << "[";
+      for (int j = 0; j < m_; ++j) {
+        ss << a_[i][j].value() << ",]"[j == m_ - 1];
+      }
+      ss << ",]"[i == n_ - 1];
     }
-    ss << ",]"[i == matrix.n() - 1];
+    return ss.str();
   }
-  return ss.str();
-}
+};

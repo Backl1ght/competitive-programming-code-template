@@ -9,7 +9,7 @@ class Modular {
     return value;
   }
 
-  static ValueType power(ValueType value, size_t exponent) {
+  static ValueType power(ValueType value, int64_t exponent) {
     ValueType result = 1;
     ValueType base = value;
     while (exponent) {
@@ -30,7 +30,7 @@ class Modular {
 
   Modular inv() const { return Modular(power(value_, mod_ - 2)); }
 
-  Modular power(size_t exponent) const { return Modular(power(value_, exponent)); }
+  Modular power(int64_t exponent) const { return Modular(power(value_, exponent)); }
 
   friend Modular operator+(const Modular& lhs, const Modular& rhs) {
     ValueType result = lhs.value() + rhs.value() >= mod_ ? lhs.value() + rhs.value() - mod_
