@@ -59,7 +59,7 @@ class Modular {
     return Modular(result);
   }
 
-  std::string to_string() const { return std::string(value_); }
+  std::string to_string() const { return std::to_string(value_); }
 
  private:
   ValueType value_;
