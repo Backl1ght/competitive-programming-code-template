@@ -29,13 +29,11 @@ std::vector<int> Match(const String& s, const String& t) {
       ++j;
 
     if (j == n) {
-      r.push_back(i);
+      r.push_back(i - n + 1);
     }
   }
 
   return r;
 }
-
-// TODO(backlight): period related.
 
 }  // namespace String
