@@ -18,7 +18,6 @@ class LinkCutTree {
     Node* parent_;
 
     int reverse_;
-    int size_;
 
     Data node_data_;
     Data path_data_;
@@ -34,7 +33,6 @@ class LinkCutTree {
           right_(nullptr),
           parent_(nullptr),
           reverse_(0),
-          size_(1),
           node_data_(),
           path_data_(),
           tag_(),
@@ -48,8 +46,8 @@ class LinkCutTree {
     }
 
     void Apply(const Tag& tag) {
-      node_data_.Apply(1, tag);
-      path_data_.Apply(size_, tag);
+      node_data_.Apply(tag);
+      path_data_.Apply(tag);
       tag_.Apply(tag);
     }
 
@@ -72,12 +70,6 @@ class LinkCutTree {
     }
 
     void Maintain() {
-      size_ = 1;
-      if (left_)
-        size_ += left_->size_;
-      if (right_)
-        size_ += right_->size_;
-
       path_data_ = node_data_;
       if (left_)
         path_data_ = path_data_ + left_->path_data_;
