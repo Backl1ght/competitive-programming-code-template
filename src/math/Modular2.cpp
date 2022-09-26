@@ -9,7 +9,8 @@ class Modular {
     return value;
   }
 
-  static ValueType power(ValueType value, int64_t exponent) {
+  template <typename ExponentType>
+  static ValueType power(ValueType value, ExponentType exponent) {
     ValueType result = 1;
     ValueType base = value;
     while (exponent) {
@@ -30,17 +31,22 @@ class Modular {
 
   Modular inv() const { return Modular(power(value_, mod_ - 2)); }
 
-  Modular power(int64_t exponent) const { return Modular(power(value_, exponent)); }
+  template <typename ExponentType>
+  Modular power(ExponentType exponent) const {
+    return Modular(power(value_, exponent));
+  }
 
   friend Modular operator+(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() + rhs.value() >= mod_ ? lhs.value() + rhs.value() - mod_
-                                                         : lhs.value() + rhs.value();
+    ValueType result = lhs.value() + rhs.value() >= mod_
+                           ? lhs.value() + rhs.value() - mod_
+                           : lhs.value() + rhs.value();
     return Modular(result);
   }
 
   friend Modular operator-(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() - rhs.value() < 0 ? lhs.value() - rhs.value() + mod_
-                                                     : lhs.value() - rhs.value();
+    ValueType result = lhs.value() - rhs.value() < 0
+                           ? lhs.value() - rhs.value() + mod_
+                           : lhs.value() - rhs.value();
     return Modular(result);
   }
 
