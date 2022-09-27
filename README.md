@@ -1,4 +1,4 @@
-# backlight-icpc-code-template
+# competitive-programming-code-template
 
 ## 使用方法
 
