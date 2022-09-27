@@ -1,102 +1,209 @@
-namespace ACAM {
-const int __N = 3e5 + 5;
-const int __M = 26;
-int tot, tr[__N][__M], fail[__N], last[__N];
-int f[__N], e[__N];
+// Problem: P5357 【模板】AC 自动机（二次加强版）
+// Contest: Luogu
+// URL: https://www.luogu.com.cn/problem/P5357
+// Memory Limit: 256 MB
+// Time Limit: 1000 ms
+//
+// Powered by CP Editor (https://cpeditor.org)
 
-int eid[__N];
-multiset<int> st[__N];
+#include <bits/stdc++.h>
 
-inline int idx(const char& c) {
-  return c - 'a';
-}
+#define CPPIO \
+  std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
 
-inline void init() {
-  tot = 0;
-  memset(tr[0], 0, sizeof(tr[0]));
-  f[0] = e[0] = 0;
-}
+#ifdef BACKLIGHT
+#include "debug.h"
+#else
+#define logd(...) ;
+#define ASSERT(x) ;
+#define serialize() std::string("")
+#endif
 
-inline int newnode() {
-  ++tot;
-  memset(tr[tot], 0, sizeof(tr[tot]));
-  f[tot] = e[tot] = 0;
-  return tot;
-}
+using i64 = int64_t;
+using u64 = uint64_t;
 
-void insert(char* s, int n, int id) {
-  int p = 0, c;
-  for (int i = 0; i < n; ++i) {
-    c = idx(s[i]);
-    if (!tr[p][c])
-      tr[p][c] = newnode();
-    p = tr[p][c];
-    ++f[p];
+void Initialize();
+void SolveCase(int Case);
+
+int main(int argc, char* argv[]) {
+  CPPIO;
+  int T = 1;
+  // std::cin >> T;
+  for (int t = 1; t <= T; ++t) {
+    SolveCase(t);
   }
-  ++e[p];
-
-  eid[id] = p;
-  st[p].insert(0);
+  return 0;
 }
 
-// 字典图优化
-// void getfail() {
-//     queue<int> q;
-//     for (int i = 0; i < __M; ++i) if (tr[0][i]) fail[tr[0][i]] = 0, q.push(tr[0][i]);
-//     while(!q.empty()) {
-//         int p = q.front(); q.pop();
-//         for (int c = 0; c < __M; ++c) {
-//             int nxt = tr[p][c];
-//             if (nxt) fail[nxt] = tr[fail[p]][c], q.push(nxt);
-//             else nxt = tr[fail[p]][c];
-//         }
-//     }
-// }
+void Initialize() {}
 
-// int query(char* t) {
-//     int n = strlen(t), p = 0, res = 0;
-//     for (int i = 0; i < n; ++i) {
-//         p = tr[p][t[i] - 'a'];
-//         for (int j = p; j && e[j] != -1; j = fail[j]) res += e[j], e[j] = -1;
-//     }
-//     return res;
-// }
+template <int alpha = 26>
+class AcAutomaton {
+ public:
+  struct Node {
+   public:
+    Node() : child_({nullptr}), trans_({nullptr}), fail_(nullptr) {
+      cnt_ = 0;
+      indeg_ = 0;
+    }
 
-// 跳fail链
-void getfail() {
-  queue<int> q;
-  fail[0] = 0;
-  for (int c = 0; c < __M; ++c)
-    if (tr[0][c])
-      fail[tr[0][c]] = last[tr[0][c]] = 0, q.push(tr[0][c]);
-  while (!q.empty()) {
-    int p = q.front();
-    q.pop();
-    for (int c = 0; c < __M; ++c) {
-      int u = tr[p][c];
-      if (u) {
-        q.push(u);
-        int v = fail[p];
-        while (v && !tr[v][c])
-          v = fail[v];
-        fail[u] = tr[v][c];
-        last[u] = e[fail[u]] ? fail[u] : last[fail[u]];
+    ~Node() {
+      for (int i = 0; i < alpha; ++i) {
+        if (child_[i]) {
+          delete child_[i];
+          child_[i] = nullptr;
+        }
+      }
+    }
+
+   public:
+    std::array<Node*, alpha> child_;
+    std::array<Node*, alpha> trans_;
+    Node* fail_;
+
+   public:
+    std::vector<int> ids_;
+    int cnt_;
+    int indeg_;
+  };
+
+ private:
+  void traverse(const std::function<void(Node* p)>& f) {
+    std::queue<Node*> q;
+    q.push(root_);
+    while (!q.empty()) {
+      Node* p = q.front();
+      q.pop();
+
+      f(p);
+
+      for (int c = 0; c < alpha; ++c) {
+        if (p->child_[c]) {
+          q.push(p->child_[c]);
+        }
       }
     }
   }
-}
 
-int queryMax(char* t, int n) {
-  int p = 0, res = -1, c;
-  for (int i = 0; i < n; ++i) {
-    c = idx(t[i]);
-    while (p && !tr[p][c])
-      p = fail[p];
-    p = tr[p][c];
-    for (int j = p; j; j = last[j])
-      if (e[j])
-        updMax(res, (*st[j].rbegin()));
+ public:
+  void Insert(const std::vector<int>& s, int id) {
+    Node* p = root_;
+    for (int i = 0; i < s.size(); ++i) {
+      int c = s[i];
+      if (p->child_[c] == nullptr) {
+        p->child_[c] = new Node();
+      }
+      p = p->child_[c];
+    }
+    p->ids_.push_back(id);
   }
-  return res;
+
+  void Build() {
+    std::queue<Node*> q;
+    q.push(root_);
+
+    while (!q.empty()) {
+      Node* p = q.front();
+      q.pop();
+
+      for (int c = 0; c < alpha; ++c) {
+        if (p->child_[c]) {
+          p->trans_[c] = p->child_[c];
+
+          if (p == root_)
+            p->trans_[c]->fail_ = root_;
+          else
+            p->trans_[c]->fail_ = p->fail_->trans_[c];
+
+          q.push(p->child_[c]);
+        } else {
+          if (p == root_)
+            p->trans_[c] = root_;
+          else
+            p->trans_[c] = p->fail_->trans_[c];
+        }
+      }
+    }
+  }
+
+  std::vector<int> Query(int n, const std::vector<int>& s) {
+    std::vector<int> count(n, 0);
+
+    Node* p = root_;
+    int m = s.size();
+    for (int i = 0; i < m; ++i) {
+      int c = s[i];
+      p = p->trans_[c];
+
+      ++p->cnt_;
+    }
+
+    traverse([](Node* p) {
+      if (p->fail_)
+        ++p->fail_->indeg_;
+    });
+
+    std::queue<Node*> q;
+    traverse([&q](Node* p) {
+      if (p->indeg_ == 0) {
+        q.push(p);
+      }
+    });
+
+    while (!q.empty()) {
+      Node* p = q.front();
+      q.pop();
+
+      if (!p->ids_.empty()) {
+        for (int id : p->ids_)
+          count[id] = p->cnt_;
+      }
+
+      if (p->fail_) {
+        --p->fail_->indeg_;
+        if (p->fail_->indeg_ == 0)
+          q.push(p->fail_);
+
+        p->fail_->cnt_ += p->cnt_;
+      }
+    }
+
+    return count;
+  }
+
+ public:
+  AcAutomaton() : root_(new Node()) {}
+
+  ~AcAutomaton() { delete root_; }
+
+ private:
+  Node* root_;
+};
+using AcAM = AcAutomaton<26>;
+
+void SolveCase(int Case) {
+  auto ToVec = [](const std::string& s) {
+    int n = s.size();
+    std::vector<int> a(n);
+    for (int i = 0; i < n; ++i)
+      a[i] = s[i] - 'a';
+    return a;
+  };
+
+  int n;
+  std::cin >> n;
+
+  AcAM ac;
+  std::string s;
+  for (int i = 0; i < n; ++i) {
+    std::cin >> s;
+    ac.Insert(ToVec(s), i);
+  }
+  ac.Build();
+
+  std::cin >> s;
+  std::vector<int> count = ac.Query(n, ToVec(s));
+
+  for (int i = 0; i < n; ++i)
+    std::cout << count[i] << "\n";
 }
-}  // namespace ACAM
