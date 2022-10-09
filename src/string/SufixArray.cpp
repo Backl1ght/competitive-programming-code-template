@@ -24,7 +24,7 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> SuffixArray(
    * 1])
    */
   std::vector<int> sa(n), rank(n), lcp(n);
-  std::vector<int> count(std::max(m, n)), old_rank(n), temp(n);
+  std::vector<int> count(std::max(m, n), 0), old_rank(n), temp(n);
 
   // build sa with binary lifting and raidx sort.
   for (int i = 0; i < n; ++i) {
@@ -80,7 +80,8 @@ std::tuple<std::vector<int>, std::vector<int>, std::vector<int>> SuffixArray(
       continue;
     if (k)
       --k;
-    while (s[i + k] == s[sa[rank[i] - 1] + k])
+    while (i + k < n && sa[rank[i] - 1] + k < n &&
+           s[i + k] == s[sa[rank[i] - 1] + k])
       ++k;
     lcp[rank[i]] = k;
   }
