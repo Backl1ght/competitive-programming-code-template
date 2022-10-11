@@ -8,7 +8,8 @@
 
 #include <bits/stdc++.h>
 
-#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define CPPIO \
+  std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
 #define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
 
 #ifdef BACKLIGHT
@@ -64,7 +65,7 @@ class MinCostMaxFlowGraph {
     ++m_;
   }
 
-  std::pair<CapacityType, CostType> EK(int src, int dst) {
+  std::pair<CostType, CapacityType> EK(int src, int dst) {
     const static CapacityType INF = std::numeric_limits<CapacityType>::max();
 
     std::vector<CostType> h(n_);
