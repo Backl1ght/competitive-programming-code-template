@@ -52,7 +52,7 @@ class MinCostMaxFlowGraph {
  public:
   MinCostMaxFlowGraph(int n) : n_(n), m_(0), edges_(0), adjacent_(n) {}
 
-  void addedge(int u, int v, CapacityType capacity, CostType cost) {
+  void AddEdge(int u, int v, CapacityType capacity, CostType cost) {
     assert(0 <= u and u < n_);
     assert(0 <= v and v < n_);
 
@@ -65,7 +65,7 @@ class MinCostMaxFlowGraph {
     ++m_;
   }
 
-  std::pair<CostType, CapacityType> EK(int src, int dst) {
+  std::pair<CostType, CapacityType> PrimalDual(int src, int dst) {
     const static CapacityType INF = std::numeric_limits<CapacityType>::max();
 
     std::vector<CostType> h(n_);
@@ -167,7 +167,7 @@ void solve_case(int Case) {
     g.addedge(u, v, cap, cost);
   }
 
-  auto [min_cost, max_flow] = g.EK(s, t);
+  auto [min_cost, max_flow] = g.PrimalDual(s, t);
 
   std::cout << max_flow << " " << min_cost << "\n";
 }
