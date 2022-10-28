@@ -2,7 +2,8 @@ template <typename DistanceType,
           typename Comp = std::greater<>,
           typename Edge = std::pair<DistanceType, int>,
           typename Node = std::pair<DistanceType, int>>
-std::vector<DistanceType> Dijkstra(const std::vector<std::vector<Edge>>& g, int s) {
+std::vector<DistanceType> Dijkstra(const std::vector<std::vector<Edge>>& g,
+                                   const std::vector<int>& s) {
   const DistanceType INF = std::numeric_limits<DistanceType>::max();
   const int n = g.size();
   const Comp comp;
@@ -11,8 +12,10 @@ std::vector<DistanceType> Dijkstra(const std::vector<std::vector<Edge>>& g, int 
   std::vector<bool> vis(n, false);
 
   std::priority_queue<Node, std::vector<Node>, Comp> q;
-  dis[s] = 0;
-  q.push(Node(dis[s], s));
+  for (int u : s) {
+    dis[u] = 0;
+    q.push(Node(dis[u], u));
+  }
   while (!q.empty()) {
     auto [c, u] = q.top();
     q.pop();
