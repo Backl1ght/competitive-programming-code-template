@@ -8,7 +8,8 @@
 
 #include <bits/stdc++.h>
 
-#define CPPIO std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
+#define CPPIO \
+  std::ios::sync_with_stdio(false), std::cin.tie(0), std::cout.tie(0);
 #define freep(p) p ? delete p, p = nullptr, void(1) : void(0)
 
 #ifdef BACKLIGHT
@@ -109,7 +110,8 @@ class MaxFlowGraph {
         auto [from, to, capacity, flow] = edges_[edge_id];
         if (level[to] == level[u] + 1) {
           CapacityType residual_capacity = capacity - flow;
-          CapacityType new_augment = dfs(to, std::min(max_augment, residual_capacity));
+          CapacityType new_augment =
+              dfs(to, std::min(max_augment, residual_capacity));
           if (new_augment <= 0)
             continue;
 
@@ -139,6 +141,24 @@ class MaxFlowGraph {
     }
 
     return max_flow;
+  }
+
+  std::vector<bool> Cut(int s) {
+    std::vector<bool> visited(n_, false);
+
+    std::function<void(int)> dfs = [&](int u) {
+      visited[u] = true;
+      for (int edge_id : adjacent_[u]) {
+        auto [from, to, capacity, flow] = edges_[edge_id];
+        if (visited[to] || capacity == flow)
+          continue;
+
+        dfs(to);
+      }
+    };
+    dfs(s);
+
+    return visited;
   }
 };
 
