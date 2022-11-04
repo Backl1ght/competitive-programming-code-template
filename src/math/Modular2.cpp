@@ -23,7 +23,9 @@ class Modular {
   }
 
  public:
-  Modular(ValueType value = 0) : value_(normalize(value)) {}
+  Modular() : value_(0) {}
+
+  Modular(ValueType value) : value_(normalize(value)) {}
 
   Modular(SupperType value) : value_(normalize(value % mod_)) {}
 
@@ -36,33 +38,52 @@ class Modular {
     return Modular(power(value_, exponent));
   }
 
-  friend Modular operator+(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() + rhs.value() >= mod_
-                           ? lhs.value() + rhs.value() - mod_
-                           : lhs.value() + rhs.value();
-    return Modular(result);
+  Modular operator-() const { return Modular(mod_ - value_); }
+
+  Modular& operator+=(const Modular& other) {
+    value_ = value_ + other.value() >= mod_ ? value_ + other.value() - mod_
+                                            : value_ + other.value();
+    return (*this);
   }
 
-  friend Modular operator-(const Modular& lhs, const Modular& rhs) {
-    ValueType result = lhs.value() - rhs.value() < 0
-                           ? lhs.value() - rhs.value() + mod_
-                           : lhs.value() - rhs.value();
-    return Modular(result);
+  Modular& operator-=(const Modular& other) {
+    value_ = value_ - other.value() < 0 ? value_ - other.value() + mod_
+                                        : value_ - other.value();
+    return (*this);
   }
 
-  friend Modular operator-(const Modular& lhs) {
-    ValueType result = normalize(-lhs.value() + mod_);
+  Modular& operator*=(const Modular& other) {
+    value_ = SupperType(1) * value_ * other.value() % mod_;
+    return (*this);
+  }
+
+  Modular& operator/=(const Modular& other) {
+    value_ = SupperType(1) * value_ * other.inv().value() % mod_;
+    return (*this);
+  }
+
+  Modular operator+(const Modular& other) const {
+    Modular result = *this;
+    result += other;
     return result;
   }
 
-  friend Modular operator*(const Modular& lhs, const Modular& rhs) {
-    ValueType result = SupperType(1) * lhs.value() * rhs.value() % mod_;
-    return Modular(result);
+  Modular operator-(const Modular& other) const {
+    Modular result = *this;
+    result -= other;
+    return result;
   }
 
-  friend Modular operator/(const Modular& lhs, const Modular& rhs) {
-    ValueType result = SupperType(1) * lhs.value() * rhs.inv().value() % mod_;
-    return Modular(result);
+  Modular operator*(const Modular& other) const {
+    Modular result = *this;
+    result *= other;
+    return result;
+  }
+
+  Modular operator/(const Modular& other) const {
+    Modular result = *this;
+    result /= other;
+    return result;
   }
 
   std::string to_string() const { return std::to_string(value_); }
@@ -75,7 +96,7 @@ class Modular {
 using Mint = Modular<int, 998'244'353, int64_t>;
 
 class Binom {
- private:
+ public:
   std::vector<Mint> f, g;
 
  public:
